@@ -98,17 +98,6 @@ const QUESTIONS = [
   },
   {
     id: 5, dim: "aiadoptie",
-    q: "Op welke afdelingen wordt AI ingezet?",
-    sub: "Selecteer de optie die het beste past bij jullie situatie.",
-    opts: [
-      { text: "Nergens structureel", score: 1 },
-      { text: "Alleen marketing of communicatie", score: 2 },
-      { text: "Meerdere afdelingen, maar los van elkaar", score: 3 },
-      { text: "Organisatiebreed met een gedeelde aanpak", score: 4 },
-    ],
-  },
-  {
-    id: 6, dim: "aiadoptie",
     q: "Zijn AI-prompts afgestemd op jullie merkidentiteit?",
     sub: "Worden er prompts gebruikt die rekening houden met jullie tone of voice en merkwaarden?",
     opts: [
@@ -119,7 +108,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 7, dim: "consistentie",
+    id: 6, dim: "consistentie",
     q: "Wie bewaakt de kwaliteit van AI-gegenereerde content?",
     sub: "Is er een review- of goedkeuringsproces?",
     opts: [
@@ -130,7 +119,7 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 8, dim: "consistentie",
+    id: 7, dim: "consistentie",
     q: "Hoe herkenbaar is jullie merk in AI-gegenereerde teksten?",
     sub: "Zou een klant het verschil merken tussen AI-content en handgeschreven content?",
     opts: [
@@ -138,17 +127,6 @@ const QUESTIONS = [
       { text: "Het is oke, maar mist onze unieke stem", score: 2 },
       { text: "Redelijk herkenbaar, maar nog niet perfect", score: 3 },
       { text: "Onze AI-content is niet te onderscheiden van handgeschreven", score: 4 },
-    ],
-  },
-  {
-    id: 9, dim: "consistentie",
-    q: "Hoeveel tijd besteedt jullie team aan het herschrijven van AI-output?",
-    sub: "Een indicatie van hoe goed AI aansluit bij jullie merk.",
-    opts: [
-      { text: "We gebruiken AI (nog) niet, dus niet van toepassing", score: 1 },
-      { text: "Veel, bijna alles moet herschreven worden", score: 2 },
-      { text: "Redelijk wat, aanpassingen in tone en stijl zijn nodig", score: 3 },
-      { text: "Minimaal, de output is direct bruikbaar", score: 4 },
     ],
   },
 ];
@@ -205,7 +183,7 @@ function getAdvice(dimScores) {
   const out = [];
   const { merkfundament: mf = 0, aiadoptie: ai = 0, consistentie: co = 0 } = dimScores;
 
-  if (mf <= 6) {
+  if (mf <= 5) {
     out.push({ dim: "merkfundament", prio: "hoog", text: "Begin met het vastleggen van jullie merkidentiteit. Zonder een stevig fundament kan AI nooit consistent op-merk communiceren. Denk aan een tone of voice document, merkwaarden en communicatierichtlijnen.", cta: "Baind helpt jullie merkfundament te vertalen naar een AI-klare basis." });
   } else if (mf <= 9) {
     out.push({ dim: "merkfundament", prio: "middel", text: "Jullie merkbasis staat, maar kan aangescherpt worden voor AI-gebruik. Specifieke voorbeelden en contra-voorbeelden maken het verschil.", cta: "Baind's merkexperts helpen jullie guidelines AI-proof te maken." });
@@ -213,17 +191,17 @@ function getAdvice(dimScores) {
     out.push({ dim: "merkfundament", prio: "laag", text: "Uitstekend merkfundament! Jullie zijn klaar om dit te vertalen naar een AI-omgeving die jullie merk versterkt.", cta: "Met Baind zetten jullie dit fundament om in een krachtige AI-omgeving." });
   }
 
-  if (ai <= 6) {
+  if (ai <= 3) {
     out.push({ dim: "aiadoptie", prio: "hoog", text: "Er liggen grote kansen om AI in te zetten voor communicatie. Start met concrete use cases en bouw van daaruit op.", cta: "Baind levert concrete toepassingen in de vorm van merk-specifieke prompts." });
-  } else if (ai <= 9) {
+  } else if (ai <= 6) {
     out.push({ dim: "aiadoptie", prio: "middel", text: "Goede start met AI! De volgende stap is om van losse experimenten naar een gestructureerde aanpak te gaan, afgestemd op jullie merk.", cta: "Baind helpt jullie AI-gebruik te structureren en op te schalen." });
   } else {
     out.push({ dim: "aiadoptie", prio: "laag", text: "Jullie AI-adoptie is ver gevorderd. Focus nu op het maximaal afstemmen van alle AI-output op jullie merkidentiteit.", cta: "Baind optimaliseert jullie bestaande AI-setup voor maximale merkconsistentie." });
   }
 
-  if (co <= 6) {
+  if (co <= 3) {
     out.push({ dim: "consistentie", prio: "hoog", text: "De AI-output sluit nog niet goed aan bij jullie merk. Dit is het gebied waar de meeste winst te behalen is, en waar Baind het verschil maakt.", cta: "Baind traint AI specifiek op jullie merk, zodat output direct herkenbaar is." });
-  } else if (co <= 9) {
+  } else if (co <= 6) {
     out.push({ dim: "consistentie", prio: "middel", text: "De basis is er, maar finetuning is nodig. Met de juiste prompts en training wordt jullie AI-content niet te onderscheiden van handgeschreven tekst.", cta: "Baind's merkexperts finetunen jullie AI voor perfecte merkconsistentie." });
   } else {
     out.push({ dim: "consistentie", prio: "laag", text: "Indrukwekkende consistentie! Jullie zijn een voorbeeld van hoe AI en merk samen kunnen gaan.", cta: "Met Baind schalen jullie dit op naar alle afdelingen en touchpoints." });
@@ -254,7 +232,7 @@ export default function QuickScan() {
       if (qIdx < QUESTIONS.length - 1) setQIdx(i => i + 1);
       else setPhase("contact");
       setSliding(false);
-    }, 350);
+    }, 300);
   };
 
   const goBack = () => { if (qIdx > 0) setQIdx(i => i - 1); };
@@ -270,7 +248,14 @@ export default function QuickScan() {
     dimMax[q.dim] = (dimMax[q.dim] || 0) + 4;
   });
 
-  const overallLabel = pct <= 35 ? "Beginner" : pct <= 60 ? "Explorer" : pct <= 82 ? "Gevorderd" : "Expert";
+  const overallLabel = pct <= 35 ? "Starter" : pct <= 60 ? "Explorer" : pct <= 82 ? "Gevorderd" : "Expert";
+  const overallSub = pct <= 35
+    ? "Jullie staan aan het begin. Dat betekent volop ruimte om te groeien."
+    : pct <= 60
+    ? "Een goede basis is gelegd. De volgende stappen maken het verschil."
+    : pct <= 82
+    ? "Jullie zijn al goed op weg. Tijd om door te pakken."
+    : "Sterke positie! Kleine optimalisaties kunnen nog meer impact maken.";
 
   const wrap = {
     minHeight: "100vh",
@@ -362,7 +347,7 @@ export default function QuickScan() {
           </div>
 
           <p style={{ marginTop: 52, fontSize: 12, color: C.subtle, fontFamily: MONO }}>
-            9 vragen · 3 dimensies · direct resultaat
+            7 vragen · 3 dimensies · direct resultaat
           </p>
         </div>
       </div>
@@ -396,8 +381,8 @@ export default function QuickScan() {
           <div style={{
             marginTop: 40,
             opacity: sliding ? 0 : 1,
-            transform: sliding ? "translateY(16px)" : "translateY(0)",
-            transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+            transform: sliding ? "translateX(24px)" : "translateX(0)",
+            transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
           }}>
             <h2 style={{
               fontSize: "clamp(22px, 4.5vw, 28px)",
@@ -481,13 +466,13 @@ export default function QuickScan() {
             marginTop: 24, fontSize: "clamp(24px, 5vw, 36px)", fontWeight: 700,
             textAlign: "center", letterSpacing: "-0.02em", lineHeight: 1.15,
           }}>
-            Wie mogen we feliciteren<br/>met dit inzicht?
+            Nog een stap naar<br/>jullie resultaat
           </h2>
 
           <p style={{
             marginTop: 14, fontSize: 15, color: C.muted, textAlign: "center", maxWidth: 380, lineHeight: 1.6,
           }}>
-            Vul je gegevens in voor je persoonlijke rapport, of bekijk direct je resultaat.
+            Laat je gegevens achter voor een persoonlijk rapport, of bekijk direct je score.
           </p>
 
           <div style={{ width: "100%", maxWidth: 380, marginTop: 36, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -560,17 +545,23 @@ export default function QuickScan() {
             marginTop: 32, display: "inline-flex", padding: "6px 16px", borderRadius: 100,
             background: C.accentDim, fontSize: 12, fontWeight: 600,
             color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: MONO,
-          }}>Jouw resultaat</div>
+          }}>Jullie AI-readiness</div>
 
           <h2 style={{
             marginTop: 24, fontSize: "clamp(26px, 5.5vw, 42px)", fontWeight: 700,
             letterSpacing: "-0.025em", lineHeight: 1.1,
           }}>
-            {contact.bedrijf || "Jullie organisatie"} scoort{" "}
-            <span style={{ color: C.accent }}>{pct}%</span>
+            <span style={{ color: C.accent }}>{pct}%</span> AI-ready
           </h2>
-          <p style={{ marginTop: 10, fontSize: 16, color: C.muted }}>
-            Niveau: <strong style={{ color: C.white }}>{overallLabel}</strong>
+          <div style={{
+            marginTop: 14, display: "inline-flex", padding: "6px 18px", borderRadius: 100,
+            background: C.card, border: `1px solid ${C.border}`,
+            fontSize: 13, fontWeight: 600, color: C.white, fontFamily: MONO,
+          }}>
+            Niveau: {overallLabel}
+          </div>
+          <p style={{ marginTop: 16, fontSize: 15, color: C.muted, maxWidth: 400, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
+            {overallSub}
           </p>
         </div>
 
