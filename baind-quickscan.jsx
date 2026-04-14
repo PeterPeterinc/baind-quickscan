@@ -216,6 +216,9 @@ export default function QuickScan() {
   const [sliding, setSliding] = useState(false);
   const [contact, setContact] = useState({ naam: "", bedrijf: "", email: "", telefoon: "" });
   const [revealed, setRevealed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [reportPdfUrl, setReportPdfUrl] = useState(null);
 
   useEffect(() => {
     const l = document.createElement("link");
@@ -256,6 +259,65 @@ export default function QuickScan() {
     : pct <= 82
     ? "Jullie zijn al goed op weg. Tijd om door te pakken."
     : "Sterke positie! Kleine optimalisaties kunnen nog meer impact maken.";
+
+  const goToResult = () => {
+    setPhase("result");
+    setTimeout(() => setRevealed(true), 80);
+  };
+
+  const submitWithContact = async () => {
+    const naam = contact.naam.trim();
+    const bedrijf = contact.bedrijf.trim();
+    const email = contact.email.trim();
+    const telefoon = contact.telefoon.trim();
+    if (!naam || !bedrijf || !email) {
+      setSubmitError("Vul naam, bedrijfsnaam en e-mailadres in.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSubmitError("Vul een geldig e-mailadres in.");
+      return;
+    }
+    const wantPdfDownload = Boolean(naam && bedrijf && email && telefoon);
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wantPdfDownload,
+          contact: {
+            naam,
+            bedrijf,
+            email,
+            telefoon,
+          },
+          answers,
+          dimScores,
+          dimMax,
+          pct,
+          overallLabel,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
+      setReportPdfUrl(typeof data.reportUrl === "string" ? data.reportUrl : null);
+    } catch (e) {
+      const net =
+        e instanceof TypeError ||
+        (typeof e?.message === "string" && e.message.toLowerCase().includes("fetch"));
+      setSubmitError(
+        net
+          ? "Opslaan lukt niet (geen API op deze URL). Lokaal: `npm run dev:vercel` met .env.local, of deploy naar Vercel. Je kunt ook overslaan."
+          : e.message || "Kon gegevens niet opslaan. Probeer opnieuw of sla over."
+      );
+      setSubmitting(false);
+      return;
+    }
+    setSubmitting(false);
+    goToResult();
+  };
 
   const wrap = {
     minHeight: "100vh",
@@ -474,13 +536,23 @@ export default function QuickScan() {
           }}>
             Laat je gegevens achter voor een persoonlijk rapport, of bekijk direct je score.
           </p>
+          <p style={{
+            marginTop: 10, fontSize: 12, color: C.subtle, textAlign: "center", maxWidth: 380, lineHeight: 1.5,
+          }}>
+            Met versturen ga je akkoord dat we je gegevens gebruiken om contact met je op te nemen over je resultaat.
+          </p>
+          <p style={{
+            marginTop: 6, fontSize: 12, color: C.subtle, textAlign: "center", maxWidth: 380, lineHeight: 1.5,
+          }}>
+            Vul alle velden in, inclusief telefoon, om op de volgende pagina je PDF-rapport te downloaden.
+          </p>
 
-          <div style={{ width: "100%", maxWidth: 380, marginTop: 36, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ width: "100%", maxWidth: 380, marginTop: 28, display: "flex", flexDirection: "column", gap: 12 }}>
             {[
               { k: "naam", ph: "Naam" },
               { k: "bedrijf", ph: "Bedrijfsnaam" },
               { k: "email", ph: "E-mailadres", type: "email" },
-              { k: "telefoon", ph: "Telefoonnummer (optioneel)" },
+              { k: "telefoon", ph: "Telefoonnummer" },
             ].map(f => (
               <input
                 key={f.k}
@@ -498,24 +570,36 @@ export default function QuickScan() {
               />
             ))}
 
+            {submitError ? (
+              <p style={{ fontSize: 13, color: C.red, margin: 0, lineHeight: 1.45 }} role="alert">
+                {submitError}
+              </p>
+            ) : null}
+
             <button
-              onClick={() => { setPhase("result"); setTimeout(() => setRevealed(true), 80); }}
+              type="button"
+              disabled={submitting}
+              onClick={submitWithContact}
               style={{
-                marginTop: 8, background: C.accent, color: C.bg, border: "none",
+                marginTop: 8, background: submitting ? C.border : C.accent, color: C.bg, border: "none",
                 borderRadius: 100, padding: "17px 44px", fontSize: 16, fontWeight: 600,
-                cursor: "pointer", fontFamily: FONT, transition: "transform 0.2s",
+                cursor: submitting ? "wait" : "pointer", fontFamily: FONT, transition: "transform 0.2s",
+                opacity: submitting ? 0.85 : 1,
               }}
-              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              onMouseEnter={e => { if (!submitting) e.currentTarget.style.transform = "scale(1.03)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
             >
-              Bekijk mijn resultaat
+              {submitting ? "Rapport aanmaken…" : "Bekijk mijn resultaat"}
             </button>
 
             <button
-              onClick={() => { setPhase("result"); setTimeout(() => setRevealed(true), 80); }}
+              type="button"
+              disabled={submitting}
+              onClick={() => { setSubmitError(""); setReportPdfUrl(null); goToResult(); }}
               style={{
                 background: "none", border: "none", color: C.subtle, fontSize: 13,
-                cursor: "pointer", fontFamily: FONT, padding: "8px 0",
+                cursor: submitting ? "not-allowed" : "pointer", fontFamily: FONT, padding: "8px 0",
+                opacity: submitting ? 0.5 : 1,
               }}
             >
               Overslaan en direct resultaat bekijken
@@ -563,6 +647,46 @@ export default function QuickScan() {
           <p style={{ marginTop: 16, fontSize: 15, color: C.muted, maxWidth: 400, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
             {overallSub}
           </p>
+
+          {reportPdfUrl ? (
+            <div style={{
+              marginTop: 32,
+              maxWidth: 420,
+              marginLeft: "auto",
+              marginRight: "auto",
+              background: C.card,
+              borderRadius: 24,
+              padding: "24px 28px",
+              border: `1.5px solid ${C.teal}`,
+              textAlign: "center",
+            }}>
+              <p style={{ fontSize: 14, color: C.muted, margin: "0 0 16px 0", lineHeight: 1.5 }}>
+                Je persoonlijke PDF met je score en gegevens staat klaar in onze opslag.
+              </p>
+              <a
+                href={reportPdfUrl}
+                download="BAIND-quickscan-rapport.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block",
+                  background: C.teal,
+                  color: C.bg,
+                  textDecoration: "none",
+                  borderRadius: 100,
+                  padding: "14px 36px",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  fontFamily: FONT,
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.03)"; e.currentTarget.style.boxShadow = `0 0 32px rgba(4,198,192,0.35)`; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                Download PDF-rapport
+              </a>
+            </div>
+          ) : null}
         </div>
 
         <div style={{
