@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { buffer } from "node:stream/consumers";
-import { buildQuickscanPdfBuffer, loadLogoPng } from "../lib/quickscan-report-pdf.js";
+import { buildQuickscanPdfBuffer } from "../lib/quickscan-report-pdf.js";
 
 const MAX_LEN = 500;
 
@@ -98,8 +98,6 @@ export default async function handler(req, res) {
   const id = randomUUID();
   const submittedAt = new Date().toISOString();
 
-  const logoPngBytes = loadLogoPng();
-
   let pdfBuf;
   try {
     pdfBuf = await buildQuickscanPdfBuffer({
@@ -114,7 +112,6 @@ export default async function handler(req, res) {
       overallLabel: overallLabel || "—",
       dimRows,
       dimScores,
-      logoPngBytes,
     });
   } catch (e) {
     console.error("PDF generation failed:", e);
