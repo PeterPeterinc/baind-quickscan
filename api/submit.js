@@ -122,7 +122,7 @@ export default async function handler(req, res) {
   let blob;
   try {
     blob = await put(pathname, pdfBuf, {
-      access: "public",
+      access: "private",
       token,
       contentType: "application/pdf",
     });
@@ -131,7 +131,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Opslaan mislukt" });
   }
 
-  const reportUrl = wantPdfDownload ? blob.url : null;
+  // Private store: use access "private". downloadUrl is bedoeld voor downloads in de browser.
+  const reportUrl = wantPdfDownload ? blob.downloadUrl : null;
 
   return res.status(200).json({ ok: true, id, reportUrl });
 }
