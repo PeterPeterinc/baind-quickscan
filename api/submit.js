@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { buffer } from "node:stream/consumers";
-import { buildQuickscanPdfBuffer } from "../lib/quickscan-report-pdf.js";
+import { buildQuickscanPdfBuffer, loadLogoPng } from "../lib/quickscan-report-pdf.js";
 
 const MAX_LEN = 500;
 
@@ -89,6 +89,7 @@ export default async function handler(req, res) {
   const dimMax = payload.dimMax && typeof payload.dimMax === "object" ? payload.dimMax : {};
 
   const dimRows = ["merkfundament", "aiadoptie", "consistentie"].map((key) => ({
+    key,
     label: DIM_LABELS[key] || key,
     score: Number(dimScores[key]) || 0,
     max: Number(dimMax[key]) || 0,
@@ -96,6 +97,8 @@ export default async function handler(req, res) {
 
   const id = randomUUID();
   const submittedAt = new Date().toISOString();
+
+  const logoPngBytes = loadLogoPng();
 
   let pdfBuf;
   try {
@@ -110,6 +113,8 @@ export default async function handler(req, res) {
       pct: pct ?? 0,
       overallLabel: overallLabel || "—",
       dimRows,
+      dimScores,
+      logoPngBytes,
     });
   } catch (e) {
     console.error("PDF generation failed:", e);
