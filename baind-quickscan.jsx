@@ -536,16 +536,41 @@ export default function QuickScan() {
           }}>
             Laat je gegevens achter voor een persoonlijk rapport, of bekijk direct je score.
           </p>
-          <p style={{
-            marginTop: 10, fontSize: 12, color: C.subtle, textAlign: "center", maxWidth: 380, lineHeight: 1.5,
+          <div style={{
+            marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
           }}>
-            Met versturen ga je akkoord dat we je gegevens gebruiken om contact met je op te nemen over je resultaat.
-          </p>
-          <p style={{
-            marginTop: 6, fontSize: 12, color: C.subtle, textAlign: "center", maxWidth: 380, lineHeight: 1.5,
-          }}>
-            Vul alle velden in, inclusief telefoon, om op de volgende pagina je PDF-rapport te downloaden.
-          </p>
+            <p style={{ fontSize: 12, color: C.subtle, textAlign: "center", maxWidth: 360, lineHeight: 1.5, margin: 0 }}>
+              Vul alle velden in om je PDF-rapport te ontvangen.
+            </p>
+            <span
+              style={{
+                position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                width: 18, height: 18, borderRadius: "50%", border: `1.5px solid ${C.subtle}`,
+                fontSize: 11, fontWeight: 700, color: C.subtle, cursor: "default", flexShrink: 0,
+                fontFamily: MONO,
+              }}
+              onMouseEnter={e => { e.currentTarget.querySelector("[data-tip]").style.opacity = 1; e.currentTarget.querySelector("[data-tip]").style.pointerEvents = "auto"; }}
+              onMouseLeave={e => { e.currentTarget.querySelector("[data-tip]").style.opacity = 0; e.currentTarget.querySelector("[data-tip]").style.pointerEvents = "none"; }}
+            >
+              i
+              <span
+                data-tip=""
+                style={{
+                  position: "absolute", bottom: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)",
+                  width: 280, padding: "14px 16px", borderRadius: 16,
+                  background: C.card, border: `1.5px solid ${C.border}`,
+                  fontSize: 12, fontWeight: 400, color: C.muted, lineHeight: 1.55, textAlign: "left",
+                  fontFamily: FONT,
+                  opacity: 0, pointerEvents: "none",
+                  transition: "opacity 0.2s ease",
+                  zIndex: 10,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+                }}
+              >
+                Met versturen ga je akkoord dat we je gegevens gebruiken om contact met je op te nemen over je resultaat. Je rapport wordt maximaal 90 dagen bewaard, daarna wordt het automatisch verwijderd. We verwerken je gegevens conform de AVG.
+              </span>
+            </span>
+          </div>
 
           <div style={{ width: "100%", maxWidth: 380, marginTop: 28, display: "flex", flexDirection: "column", gap: 12 }}>
             {[
@@ -649,28 +674,16 @@ export default function QuickScan() {
           </p>
 
           {reportPdfUrl ? (
-            <div style={{
-              marginTop: 32,
-              maxWidth: 420,
-              marginLeft: "auto",
-              marginRight: "auto",
-              background: C.card,
-              borderRadius: 24,
-              padding: "24px 28px",
-              border: `1.5px solid ${C.teal}`,
-              textAlign: "center",
-            }}>
-              <p style={{ fontSize: 14, color: C.muted, margin: "0 0 16px 0", lineHeight: 1.5 }}>
-                Je persoonlijke PDF met je score en gegevens staat klaar in onze opslag.
+            <div style={{ marginTop: 32, textAlign: "center" }}>
+              <p style={{ fontSize: 15, color: C.muted, margin: "0 0 18px 0", lineHeight: 1.5 }}>
+                Download hier je persoonlijke rapport.
               </p>
               <a
-                href={reportPdfUrl}
+                href={`/api/download?url=${encodeURIComponent(reportPdfUrl)}`}
                 download="BAIND-quickscan-rapport.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
                 style={{
                   display: "inline-block",
-                  background: C.teal,
+                  background: C.accent,
                   color: C.bg,
                   textDecoration: "none",
                   borderRadius: 100,
@@ -680,7 +693,7 @@ export default function QuickScan() {
                   fontFamily: FONT,
                   transition: "transform 0.2s, box-shadow 0.2s",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.03)"; e.currentTarget.style.boxShadow = `0 0 32px rgba(4,198,192,0.35)`; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.04)"; e.currentTarget.style.boxShadow = `0 0 48px ${C.accentGlow}`; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}
               >
                 Download PDF-rapport
