@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import consistentieIcon from "./consistentie-icon.png";
+import baindLogoWit from "./baind-logo-wit.png";
 
 /*
   BAIND QUICKSCAN  AI & Merkconsistentie
@@ -131,11 +132,9 @@ const QUESTIONS = [
   },
 ];
 
-function BaindLogo() {
+function BaindLogo({ height = 28 }) {
   return (
-    <svg width="80" height="24" viewBox="0 0 80 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <text x="0" y="19" fill={C.white} fontFamily={FONT} fontWeight="700" fontSize="20" letterSpacing="-0.5">baind</text>
-    </svg>
+    <img src={baindLogoWit} alt="Baind" style={{ height, width: "auto", display: "block" }} />
   );
 }
 
@@ -338,22 +337,26 @@ export default function QuickScan() {
       <div style={wrap}>
         <div style={{ ...inner, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "92vh", textAlign: "center" }}>
           
-          <BaindLogo />
-
           <div style={{
             marginTop: 48,
-            display: "inline-flex",
-            padding: "6px 16px",
-            borderRadius: 100,
-            background: C.accentDim,
-            fontSize: 12,
-            fontWeight: 600,
-            color: C.accent,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: MONO,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
           }}>
-            Quickscan
+            <BaindLogo height={28} />
+            <div style={{
+              padding: "6px 16px",
+              borderRadius: 100,
+              background: C.accentDim,
+              fontSize: 12,
+              fontWeight: 600,
+              color: C.accent,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              fontFamily: MONO,
+            }}>
+              Quickscan
+            </div>
           </div>
 
           <h1 style={{
@@ -519,7 +522,7 @@ export default function QuickScan() {
       <div style={wrap}>
         <div style={{ ...inner, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "88vh" }}>
           <div style={{
-            display: "inline-flex", padding: "6px 16px", borderRadius: 100,
+            display: "flex", width: "fit-content", padding: "6px 16px", borderRadius: 100,
             background: C.accentDim, fontSize: 12, fontWeight: 600,
             color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: MONO,
           }}>Bijna klaar</div>
@@ -648,13 +651,15 @@ export default function QuickScan() {
         transform: revealed ? "translateY(0)" : "translateY(20px)",
         transition: "all 0.8s cubic-bezier(0.4,0,0.2,1)",
       }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <BaindLogo />
-          <div style={{
-            marginTop: 32, display: "inline-flex", padding: "6px 16px", borderRadius: 100,
-            background: C.accentDim, fontSize: 12, fontWeight: 600,
-            color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: MONO,
-          }}>Jullie AI-readiness</div>
+        <div style={{ textAlign: "center", marginBottom: 48, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <BaindLogo height={24} />
+            <div style={{
+              padding: "6px 16px", borderRadius: 100,
+              background: C.accentDim, fontSize: 12, fontWeight: 600,
+              color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: MONO,
+            }}>Jullie AI-readiness</div>
+          </div>
 
           <h2 style={{
             marginTop: 24, fontSize: "clamp(26px, 5.5vw, 42px)", fontWeight: 700,
@@ -663,7 +668,7 @@ export default function QuickScan() {
             <span style={{ color: C.accent }}>{pct}%</span> AI-ready
           </h2>
           <div style={{
-            marginTop: 14, display: "inline-flex", padding: "6px 18px", borderRadius: 100,
+            marginTop: 14, display: "flex", width: "fit-content", margin: "14px auto 0", padding: "6px 18px", borderRadius: 100,
             background: C.card, border: `1px solid ${C.border}`,
             fontSize: 13, fontWeight: 600, color: C.white, fontFamily: MONO,
           }}>
