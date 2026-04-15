@@ -302,17 +302,8 @@ export default function QuickScan() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
       setReportPdfUrl(typeof data.reportUrl === "string" ? data.reportUrl : null);
-    } catch (e) {
-      const net =
-        e instanceof TypeError ||
-        (typeof e?.message === "string" && e.message.toLowerCase().includes("fetch"));
-      setSubmitError(
-        net
-          ? "Opslaan lukt niet (geen API op deze URL). Lokaal: `npm run dev:vercel` met .env.local, of deploy naar Vercel. Je kunt ook overslaan."
-          : e.message || "Kon gegevens niet opslaan. Probeer opnieuw of sla over."
-      );
-      setSubmitting(false);
-      return;
+    } catch {
+      setReportPdfUrl(null);
     }
     setSubmitting(false);
     goToResult();
@@ -775,9 +766,7 @@ export default function QuickScan() {
             Baind helpt je AI te integreren in je organisatie, volledig in lijn met jouw merk. Plan een vrijblijvend gesprek.
           </p>
           <a
-            href="https://www.baind.nl/"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`mailto:hai@baind.nl?subject=${encodeURIComponent("Resultaten Quickscan")}&body=${encodeURIComponent(`Hoi Baind,\n\nIk heb de Quickscan ingevuld en scored ${pct}% (niveau: ${overallLabel}).\n\nIk zou graag een gesprek plannen om de resultaten te bespreken.\n\nMet vriendelijke groet,\n${contact.naam || ""}\n${contact.bedrijf || ""}`)}`}
             style={{
               display: "inline-block", background: C.accent, color: C.bg, textDecoration: "none",
               borderRadius: 16, padding: "17px 44px", fontSize: 16, fontWeight: 600, fontFamily: FONT,
