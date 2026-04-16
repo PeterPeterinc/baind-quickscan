@@ -218,6 +218,7 @@ export default function QuickScan() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [reportPdfUrl, setReportPdfUrl] = useState(null);
+  const [reportPdfFileName, setReportPdfFileName] = useState(null);
 
   useEffect(() => {
     const l = document.createElement("link");
@@ -302,8 +303,14 @@ export default function QuickScan() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
       setReportPdfUrl(typeof data.reportUrl === "string" ? data.reportUrl : null);
+      setReportPdfFileName(
+        typeof data.reportUrl === "string" && typeof data.reportFileName === "string"
+          ? data.reportFileName
+          : null,
+      );
     } catch {
       setReportPdfUrl(null);
+      setReportPdfFileName(null);
     }
     setSubmitting(false);
     goToResult();
@@ -675,8 +682,8 @@ export default function QuickScan() {
                 Download hier je persoonlijke rapport.
               </p>
               <a
-                href={`/api/download?url=${encodeURIComponent(reportPdfUrl)}`}
-                download="BAIND-quickscan-rapport.pdf"
+                href={`/api/download?url=${encodeURIComponent(reportPdfUrl)}&filename=${encodeURIComponent(reportPdfFileName || "BAIND-quickscan-rapport.pdf")}`}
+                download={reportPdfFileName || "BAIND-quickscan-rapport.pdf"}
                 style={{
                   display: "inline-block",
                   background: C.accent,

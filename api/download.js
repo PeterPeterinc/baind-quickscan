@@ -1,5 +1,31 @@
 import { get } from "@vercel/blob";
 
+function buildContentDisposition(displayName) {
+  const ascii = displayName
+    .replace(/[^\x20-\x7E]/g, "_")
+    .replace(/["\\]/g, "_")
+    .slice(0, 200);
+  const star = encodeURIComponent(displayName);
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${star}`;
+}
+
+/** Query `filename` veilig maken (alleen bestandsnaam, eindigt op .pdf). */
+function safeDownloadFilename(raw) {
+  if (typeof raw !== "string" || !raw.trim()) return "BAIND-quickscan-rapport.pdf";
+  let name = raw.trim();
+  try {
+    name = decodeURIComponent(name);
+  } catch {
+    return "BAIND-quickscan-rapport.pdf";
+  }
+  name = name.replace(/^.*[/\\]/, "").replace(/["\r\n\x00-\x1f]/g, "");
+  if (!name) return "BAIND-quickscan-rapport.pdf";
+  if (!name.toLowerCase().endsWith(".pdf")) {
+    name = `${name.replace(/\.+$/u, "")}.pdf`;
+  }
+  return name.slice(0, 200) || "BAIND-quickscan-rapport.pdf";
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -32,8 +58,9 @@ export default async function handler(req, res) {
     return res.status(404).end("Not found");
   }
 
+  const dispName = safeDownloadFilename(req.query.filename);
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", 'attachment; filename="BAIND-quickscan-rapport.pdf"');
+  res.setHeader("Content-Disposition", buildContentDisposition(dispName));
   if (result.blob?.size) {
     res.setHeader("Content-Length", result.blob.size);
   }

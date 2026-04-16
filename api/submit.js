@@ -20,6 +20,21 @@ function validEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+/** Veilige bestandsnaam (zonder pad) op basis van de klantnaam voor blob-opslag. */
+function sanitizeFileName(raw, maxLen = 100) {
+  if (typeof raw !== "string" || !raw.trim()) return "quickscan-rapport";
+  let s = raw
+    .trim()
+    .replace(/[/\\:*?"<>|#\x00-\x1f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!s) return "quickscan-rapport";
+  s = s.slice(0, maxLen).replace(/\.+$/u, "").trim();
+  if (!s) return "quickscan-rapport";
+  if (s.toLowerCase().endsWith(".pdf")) s = s.slice(0, -4).trim() || "quickscan-rapport";
+  return s;
+}
+
 async function getJsonBody(req) {
   if (req.body !== undefined && req.body !== null) {
     if (typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -119,7 +134,8 @@ export default async function handler(req, res) {
   }
 
   const datePrefix = submittedAt.slice(0, 10);
-  const pathname = `quickscan-rapporten/${datePrefix}/${id}.pdf`;
+  const reportFileName = `${sanitizeFileName(naam)}.pdf`;
+  const pathname = `quickscan-rapporten/${datePrefix}/${reportFileName}`;
 
   let blob;
   try {
@@ -136,5 +152,5 @@ export default async function handler(req, res) {
   // Private store: use access "private". downloadUrl is bedoeld voor downloads in de browser.
   const reportUrl = wantPdfDownload ? blob.downloadUrl : null;
 
-  return res.status(200).json({ ok: true, id, reportUrl });
+  return res.status(200).json({ ok: true, id, reportUrl, reportFileName });
 }
