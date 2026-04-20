@@ -4,48 +4,153 @@ import baindLogoWit from "./baind-logo-wit.png";
 
 /*
   BAIND QUICKSCAN  AI & Merkconsistentie
-  Stijl gebaseerd op baind.nl: donker teal, clean, goud accent, 
-  zachte ronde vormen, veel witruimte, modern sans-serif.
-  Geen em-dashes in de tekst.
+  Styled with the Baind Design System tokens (Figma).
+  Font: Rethink Sans — Regular 400 voor display/headings met negatieve
+  letter-spacing, Medium 500 voor H5/H6/links/labels/buttons.
 */
 
+// Design tokens — mapped 1:1 to Figma variables in Baind Design System
+const tokens = {
+  color: {
+    brand500: "#FFBF00",
+    brandText: "#00302E",
+    dark: {
+      bg: "#001E1D",
+      text: "#FFFFFF",
+      border: "rgba(255,255,255,0.2)",
+    },
+    light: {
+      bg: "#FFFFFF",
+      text: "#00302E",
+      border: "rgba(0,48,46,0.2)",
+    },
+    button: {
+      primary: {
+        bg: "#FFBF00",
+        text: "#00302E",
+        border: "#FFBF00",
+        bgHover: "#00302E",
+        textHover: "#FFFFFF",
+        borderHover: "#00302E",
+      },
+      secondaryDark: {
+        bg: "transparent",
+        text: "#FFFFFF",
+        border: "rgba(255,255,255,0.2)",
+        borderHover: "#FFFFFF",
+      },
+    },
+  },
+  space: { 0: 0, 1: 8, 2: 12, 3: 16, 5: 32, 6: 40, 7: 48, 8: 64 },
+  section: { none: 0, small: 80, main: 112, large: 160, pageTop: 224 },
+  site: { margin: 96, gutter: 24 },
+  radius: { small: 8, main: 16, round: 99999 },
+  borderWidth: { main: 2 },
+  fontSize: {
+    display: 88,
+    h1: 64, h2: 48, h3: 32, h4: 24, h5: 18, h6: 16,
+    textMain: 20, textSmall: 16, textLink: 16,
+  },
+  letterSpacing: {
+    display: "-0.0114em", // -1 / 88
+    h1: "-0.047em",       // -3 / 64
+    h2: "-0.0417em",      // -2 / 48
+    h3: "-0.0313em",      // -1 / 32
+    h4: "0",
+  },
+};
+
+// Accent / state colors (kept outside the Figma token contract, used for the
+// quickscan's advice/results visualisations).
 const C = {
-  bg: "#0C3331",
-  bgSoft: "#114340",
-  card: "#164643",
-  cardHover: "#1C5350",
-  border: "#2A4F4D",
-  borderHover: "#3A6563",
-  white: "#F4EFE4",
-  muted: "#B4B8A8",
-  subtle: "#8A9090",
-  accent: "#F0BF4A",
-  accentSoft: "#EFC85C",
-  accentDim: "rgba(240,191,74,0.14)",
-  accentGlow: "rgba(240,191,74,0.32)",
+  bg: tokens.color.dark.bg,
+  card: "#0C3331",
+  cardHover: "#103D3A",
+  border: tokens.color.dark.border,
+  borderHover: "rgba(255,255,255,0.35)",
+  white: tokens.color.dark.text,
+  muted: "rgba(255,255,255,0.72)",
+  subtle: "rgba(255,255,255,0.5)",
+  accent: tokens.color.brand500,
+  accentInk: tokens.color.brandText,
+  accentDim: "rgba(255,191,0,0.14)",
+  brandText: tokens.color.brandText,
   teal: "#5FB8B2",
-  cream: "#F6EFE3",
-  creamText: "#0C3331",
-  creamMuted: "#4A5E5C",
+  cream: "#F3EDE1",
+  creamText: tokens.color.light.text,
+  creamMuted: "rgba(0,48,46,0.82)",
   red: "#E2785A",
   orange: "#E4A74D",
   green: "#5FB8B2",
   dimGreen: "rgba(95,184,178,0.14)",
   dimOrange: "rgba(228,167,77,0.14)",
   dimRed: "rgba(226,120,90,0.14)",
-  divider: "rgba(244,239,228,0.08)",
+  divider: "rgba(255,255,255,0.12)",
 };
 
-const FONT = `'Plus Jakarta Sans', 'DM Sans', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+const FONT = `'Rethink Sans', 'Plus Jakarta Sans', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 const MONO = `'JetBrains Mono', 'SF Mono', 'Fira Code', monospace`;
 
+// Reusable button style factory matching the Figma button/primary spec
+// (bg/border/text swap on hover, 2px border, radius/main).
+const buttonPrimaryStyle = ({ submitting = false } = {}) => ({
+  background: submitting ? C.border : tokens.color.button.primary.bg,
+  color: submitting ? C.white : tokens.color.button.primary.text,
+  border: `${tokens.borderWidth.main}px solid ${
+    submitting ? C.border : tokens.color.button.primary.border
+  }`,
+  borderRadius: tokens.radius.main,
+  padding: "14px 26px 14px 30px",
+  fontSize: tokens.fontSize.textLink,
+  fontWeight: 500,
+  fontFamily: FONT,
+  transition: "background 0.2s, border-color 0.2s, color 0.2s",
+});
+
+const hoverPrimaryOn = (e) => {
+  e.currentTarget.style.background = tokens.color.button.primary.bgHover;
+  e.currentTarget.style.borderColor = tokens.color.button.primary.borderHover;
+  e.currentTarget.style.color = tokens.color.button.primary.textHover;
+};
+const hoverPrimaryOff = (e) => {
+  e.currentTarget.style.background = tokens.color.button.primary.bg;
+  e.currentTarget.style.borderColor = tokens.color.button.primary.border;
+  e.currentTarget.style.color = tokens.color.button.primary.text;
+};
+
+function RegisteredIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M9 6.75h4.25a3 3 0 0 1 0 6H9v-6Zm0 6L14 17.25M9 6.75V17.25"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const DIMENSIONS = {
-  merkfundament: { label: "Merkfundament", icon: "\u25C6", color: C.accent, dimColor: C.accentDim },
+  merkfundament: { label: "Merkfundament", IconComp: RegisteredIcon, color: C.accent, dimColor: C.accentDim },
   aiadoptie: { label: "AI-adoptie", icon: "\u26A1", color: C.teal, dimColor: C.dimGreen },
   consistentie: { label: "Consistentie", iconSrc: consistentieIcon, color: C.accent, dimColor: C.accentDim },
 };
 
 function DimIcon({ dim, size = 14 }) {
+  if (dim.IconComp) {
+    const IconComp = dim.IconComp;
+    return <IconComp size={size} />;
+  }
   if (dim.iconSrc) {
     const imgSize = size * 1.35;
     return <img src={dim.iconSrc} alt="" style={{
@@ -247,7 +352,7 @@ export default function QuickScan() {
 
   useEffect(() => {
     const l = document.createElement("link");
-    l.href = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;700&display=swap";
+    l.href = "https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400..800;1,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap";
     l.rel = "stylesheet";
     document.head.appendChild(l);
   }, []);
@@ -343,7 +448,7 @@ export default function QuickScan() {
 
   const wrap = {
     minHeight: "100vh",
-    background: `radial-gradient(ellipse at 50% -10%, rgba(240,191,74,0.10) 0%, ${C.bg} 55%), ${C.bg}`,
+    background: `radial-gradient(ellipse at 50% -10%, rgba(255,191,0,0.08) 0%, ${C.bg} 55%), ${C.bg}`,
     color: C.white,
     fontFamily: FONT,
     display: "flex",
@@ -384,18 +489,18 @@ export default function QuickScan() {
 
           <h1 style={{
             marginTop: 28,
-            fontSize: "clamp(34px, 7vw, 56px)",
-            fontWeight: 700,
-            lineHeight: 1.08,
-            letterSpacing: "-0.03em",
+            fontSize: `clamp(40px, 8vw, ${tokens.fontSize.h1}px)`,
+            fontWeight: 400,
+            lineHeight: 1,
+            letterSpacing: tokens.letterSpacing.h1,
           }}>
             Hoe AI-ready<br/>
             <span style={{ color: C.accent }}>is jouw merk?</span>
           </h1>
 
           <p style={{
-            marginTop: 20,
-            fontSize: 17,
+            marginTop: tokens.space[3] + 4,
+            fontSize: tokens.fontSize.textMain - 3,
             lineHeight: 1.65,
             color: C.muted,
             maxWidth: 420,
@@ -406,27 +511,18 @@ export default function QuickScan() {
           <button
             onClick={() => setPhase("scan")}
             style={{
+              ...buttonPrimaryStyle(),
               marginTop: 44,
-              background: C.accent,
-              color: C.bg,
-              border: "none",
-              borderRadius: 100,
-              padding: "17px 32px 17px 36px",
-              fontSize: 16,
-              fontWeight: 600,
               cursor: "pointer",
-              fontFamily: FONT,
-              letterSpacing: "-0.01em",
-              transition: "transform 0.2s, box-shadow 0.2s, background 0.2s",
               display: "inline-flex",
               alignItems: "center",
-              gap: 12,
+              gap: 10,
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 10px 30px ${C.accentGlow}`; e.currentTarget.style.background = C.accentSoft; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = C.accent; }}
+            onMouseEnter={hoverPrimaryOn}
+            onMouseLeave={hoverPrimaryOff}
           >
             Start de scan
-            <ArrowIcon size={16} color={C.bg} />
+            <ArrowIcon size={16} />
           </button>
 
           <div style={{ marginTop: 56, display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
@@ -477,15 +573,20 @@ export default function QuickScan() {
             transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
           }}>
             <h2 style={{
-              fontSize: "clamp(22px, 4.5vw, 28px)",
-              fontWeight: 600,
-              lineHeight: 1.3,
-              letterSpacing: "-0.015em",
-              margin: "0 0 8px 0",
+              fontSize: `clamp(22px, 4.5vw, ${tokens.fontSize.h3}px)`,
+              fontWeight: 400,
+              lineHeight: 1.2,
+              letterSpacing: tokens.letterSpacing.h3,
+              margin: `0 0 ${tokens.space[1]}px 0`,
             }}>
               {q.q}
             </h2>
-            <p style={{ fontSize: 14, color: C.subtle, margin: "0 0 32px 0", lineHeight: 1.55 }}>
+            <p style={{
+              fontSize: tokens.fontSize.textSmall - 2,
+              color: C.subtle,
+              margin: `0 0 ${tokens.space[5]}px 0`,
+              lineHeight: 1.55,
+            }}>
               {q.sub}
             </p>
 
@@ -499,9 +600,9 @@ export default function QuickScan() {
                     style={{
                       display: "flex", alignItems: "center", gap: 14,
                       background: sel ? C.accentDim : C.card,
-                      border: `1.5px solid ${sel ? "rgba(240,191,74,0.45)" : C.border}`,
-                      borderRadius: 18,
-                      padding: "16px 18px",
+                      border: `${tokens.borderWidth.main}px solid ${sel ? "rgba(255,191,0,0.5)" : C.border}`,
+                      borderRadius: tokens.radius.main,
+                      padding: `${tokens.space[3]}px ${tokens.space[3] + 2}px`,
                       textAlign: "left",
                       color: sel ? C.accent : C.white,
                       fontSize: 15,
@@ -514,7 +615,7 @@ export default function QuickScan() {
                     onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}}
                   >
                     <span style={{
-                      minWidth: 30, height: 30, borderRadius: 9,
+                      minWidth: 30, height: 30, borderRadius: tokens.radius.small,
                       background: sel ? C.accent : C.divider,
                       color: sel ? C.bg : C.subtle,
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -555,8 +656,12 @@ export default function QuickScan() {
           }}>Bijna klaar</div>
 
           <h2 style={{
-            marginTop: 24, fontSize: "clamp(24px, 5vw, 36px)", fontWeight: 700,
-            textAlign: "center", letterSpacing: "-0.02em", lineHeight: 1.15,
+            marginTop: 24,
+            fontSize: `clamp(32px, 6vw, ${tokens.fontSize.h2}px)`,
+            fontWeight: 400,
+            textAlign: "center",
+            letterSpacing: tokens.letterSpacing.h2,
+            lineHeight: 1.2,
           }}>
             Nog een stap naar<br/>jullie resultaat
           </h2>
@@ -616,8 +721,14 @@ export default function QuickScan() {
                 value={contact[f.k]}
                 onChange={e => setContact(p => ({ ...p, [f.k]: e.target.value }))}
                 style={{
-                  background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 16,
-                  padding: "15px 18px", fontSize: 15, color: C.white, fontFamily: FONT, outline: "none",
+                  background: C.card,
+                  border: `${tokens.borderWidth.main}px solid ${C.border}`,
+                  borderRadius: tokens.radius.main,
+                  padding: "15px 18px",
+                  fontSize: 15,
+                  color: C.white,
+                  fontFamily: FONT,
+                  outline: "none",
                   transition: "border-color 0.2s",
                 }}
                 onFocus={e => e.target.style.borderColor = C.teal}
@@ -636,18 +747,17 @@ export default function QuickScan() {
               disabled={submitting}
               onClick={submitWithContact}
               style={{
-                marginTop: 8, background: submitting ? C.border : C.accent, color: C.bg, border: "none",
-                borderRadius: 100, padding: "16px 28px 16px 32px", fontSize: 16, fontWeight: 600,
-                cursor: submitting ? "wait" : "pointer", fontFamily: FONT,
-                transition: "transform 0.2s, background 0.2s, box-shadow 0.2s",
+                ...buttonPrimaryStyle({ submitting }),
+                marginTop: tokens.space[1],
+                cursor: submitting ? "wait" : "pointer",
                 opacity: submitting ? 0.85 : 1,
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 12,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
               }}
-              onMouseEnter={e => { if (!submitting) { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.background = C.accentSoft; e.currentTarget.style.boxShadow = `0 10px 30px ${C.accentGlow}`; } }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = submitting ? C.border : C.accent; e.currentTarget.style.boxShadow = "none"; }}
+              onMouseEnter={e => { if (!submitting) hoverPrimaryOn(e); }}
+              onMouseLeave={e => { if (!submitting) hoverPrimaryOff(e); }}
             >
               {submitting ? "Rapport aanmaken…" : "Bekijk mijn resultaat"}
-              {!submitting ? <ArrowIcon size={16} color={C.bg} /> : null}
+              {!submitting ? <ArrowIcon size={16} /> : null}
             </button>
 
             <button
@@ -692,8 +802,11 @@ export default function QuickScan() {
           </div>
 
           <h2 style={{
-            marginTop: 24, fontSize: "clamp(26px, 5.5vw, 42px)", fontWeight: 700,
-            letterSpacing: "-0.025em", lineHeight: 1.1,
+            marginTop: 24,
+            fontSize: `clamp(32px, 6vw, ${tokens.fontSize.h2}px)`,
+            fontWeight: 400,
+            letterSpacing: tokens.letterSpacing.h2,
+            lineHeight: 1.2,
           }}>
             <span style={{ color: C.accent }}>{pct}%</span> AI-ready
           </h2>
@@ -717,24 +830,19 @@ export default function QuickScan() {
                 href={`/api/download?url=${encodeURIComponent(reportPdfUrl)}&filename=${encodeURIComponent(reportPdfFileName || "BAIND-quickscan-rapport.pdf")}`}
                 download={reportPdfFileName || "BAIND-quickscan-rapport.pdf"}
                 style={{
+                  ...buttonPrimaryStyle(),
+                  padding: "12px 22px 12px 26px",
+                  fontSize: 15,
+                  textDecoration: "none",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 10,
-                  background: C.accent,
-                  color: C.bg,
-                  textDecoration: "none",
-                  borderRadius: 100,
-                  padding: "13px 24px 13px 28px",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  fontFamily: FONT,
-                  transition: "transform 0.2s, box-shadow 0.2s, background 0.2s",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 10px 30px ${C.accentGlow}`; e.currentTarget.style.background = C.accentSoft; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = C.accent; }}
+                onMouseEnter={hoverPrimaryOn}
+                onMouseLeave={hoverPrimaryOff}
               >
                 Download PDF-rapport
-                <ArrowIcon size={15} color={C.bg} />
+                <ArrowIcon size={15} />
               </a>
             </div>
           ) : null}
@@ -747,7 +855,7 @@ export default function QuickScan() {
           {Object.entries(DIMENSIONS).map(([key, dim]) => (
             <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
               <Ring pct={(dimScores[key] || 0) / (dimMax[key] || 1)} color={dim.color} size={100} strokeWidth={4}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: dim.color, fontFamily: FONT }}>
+                <span style={{ fontSize: 22, fontWeight: 500, color: dim.color, fontFamily: FONT }}>
                   {dimScores[key] || 0}
                 </span>
                 <span style={{ fontSize: 10, color: C.subtle, fontFamily: MONO }}>/{dimMax[key]}</span>
@@ -764,8 +872,10 @@ export default function QuickScan() {
             const dim = DIMENSIONS[a.dim];
             return (
               <div key={i} style={{
-                background: C.card, borderRadius: 32, padding: "28px 30px",
-                border: `1.5px solid ${C.border}`,
+                background: C.card,
+                borderRadius: tokens.radius.main,
+                padding: "28px 30px",
+                border: `${tokens.borderWidth.main}px solid ${C.border}`,
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                   <div style={{
@@ -796,17 +906,17 @@ export default function QuickScan() {
 
         <div style={{
           background: C.cream,
-          borderRadius: 28,
+          borderRadius: tokens.radius.main,
           padding: "48px 40px",
-          marginBottom: 40,
+          marginBottom: tokens.space[6],
           boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
         }}>
           <h3 style={{
-            fontSize: "clamp(24px, 4vw, 32px)",
-            fontWeight: 700,
+            fontSize: `clamp(24px, 4vw, ${tokens.fontSize.h3}px)`,
+            fontWeight: 400,
             margin: "0 0 14px 0",
-            letterSpacing: "-0.025em",
-            lineHeight: 1.15,
+            letterSpacing: tokens.letterSpacing.h3,
+            lineHeight: 1.2,
             color: C.creamText,
           }}>
             Klaar om AI écht aan<br/>het werk te zetten?
@@ -823,17 +933,19 @@ export default function QuickScan() {
           <a
             href={`mailto:hai@baind.nl?subject=${encodeURIComponent("Resultaten Quickscan")}&body=${encodeURIComponent(`Hoi Baind,\n\nIk heb de Quickscan ingevuld en scored ${pct}% (niveau: ${overallLabel}).\n\nIk zou graag een gesprek plannen om de resultaten te bespreken.\n\nMet vriendelijke groet,\n${contact.naam || ""}\n${contact.bedrijf || ""}`)}`}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
-              background: C.accent, color: C.creamText, textDecoration: "none",
-              borderRadius: 100, padding: "14px 24px 14px 28px",
-              fontSize: 15, fontWeight: 600, fontFamily: FONT,
-              transition: "transform 0.2s, box-shadow 0.2s, background 0.2s",
+              ...buttonPrimaryStyle(),
+              padding: "13px 24px 13px 28px",
+              fontSize: 15,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 12px 30px rgba(240,191,74,0.45)`; e.currentTarget.style.background = C.accentSoft; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = C.accent; }}
+            onMouseEnter={hoverPrimaryOn}
+            onMouseLeave={hoverPrimaryOff}
           >
             Plan een gesprek
-            <ArrowIcon size={15} color={C.creamText} />
+            <ArrowIcon size={15} />
           </a>
         </div>
 
