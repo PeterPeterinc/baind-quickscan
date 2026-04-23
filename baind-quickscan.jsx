@@ -119,24 +119,30 @@ const hoverPrimaryOff = (e) => {
 };
 
 function RegisteredIcon({ size = 14 }) {
+  const boxSize = Math.round(size * 1.25);
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
+    <span
       aria-hidden="true"
-      style={{ display: "block", flexShrink: 0 }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: boxSize,
+        height: boxSize,
+        borderRadius: "50%",
+        border: `1.5px solid currentColor`,
+        fontFamily: FONT,
+        fontSize: Math.round(boxSize * 0.7),
+        fontWeight: 700,
+        lineHeight: 1,
+        color: "currentColor",
+        flexShrink: 0,
+        boxSizing: "border-box",
+        paddingTop: 1,
+      }}
     >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M9 6.75h4.25a3 3 0 0 1 0 6H9v-6Zm0 6L14 17.25M9 6.75V17.25"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      R
+    </span>
   );
 }
 
@@ -367,6 +373,24 @@ export default function QuickScan() {
       setSliding(false);
     }, 300);
   };
+
+  useEffect(() => {
+    if (phase !== "scan") return;
+    const handleKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      const key = e.key.toLowerCase();
+      const idx = key.charCodeAt(0) - 97;
+      const q = QUESTIONS[qIdx];
+      if (idx >= 0 && idx < q.opts.length) {
+        e.preventDefault();
+        pick(q.id, q.opts[idx].score);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [phase, qIdx, sliding]);
 
   const goBack = () => { if (qIdx > 0) setQIdx(i => i - 1); };
 
