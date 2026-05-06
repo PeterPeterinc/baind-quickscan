@@ -209,7 +209,7 @@ const QUESTIONS = [
       { text: "We gebruiken nog geen AI voor communicatie", score: 1 },
       { text: "Individuele medewerkers experimenteren op eigen initiatief", score: 2 },
       { text: "We gebruiken AI structureel voor bepaalde taken", score: 3 },
-      { text: "AI is geintegreerd in onze workflows met duidelijke richtlijnen", score: 4 },
+      { text: "AI is geïntegreerd in onze workflows met duidelijke richtlijnen", score: 4 },
     ],
   },
   {
@@ -240,7 +240,7 @@ const QUESTIONS = [
     sub: "Zou een klant het verschil merken tussen AI-content en handgeschreven content?",
     opts: [
       { text: "AI-content is duidelijk robotachtig of generiek", score: 1 },
-      { text: "Het is oke, maar mist onze unieke stem", score: 2 },
+      { text: "Het is oké, maar mist onze unieke stem", score: 2 },
       { text: "Redelijk herkenbaar, maar nog niet perfect", score: 3 },
       { text: "Onze AI-content is niet te onderscheiden van handgeschreven", score: 4 },
     ],
@@ -955,7 +955,7 @@ export default function QuickScan() {
             Wij helpen organisaties om AI in te zetten op een manier die past bij wie ze zijn. Plan een gesprek en ontdek wat dat voor jullie team kan betekenen.
           </p>
           <a
-            href={`mailto:hai@baind.nl?subject=${encodeURIComponent("Resultaten Quickscan")}&body=${encodeURIComponent(`Hoi Baind,\n\nIk heb de Quickscan ingevuld en scored ${pct}% (niveau: ${overallLabel}).\n\nIk zou graag een gesprek plannen om de resultaten te bespreken.\n\nMet vriendelijke groet,\n${contact.naam || ""}\n${contact.bedrijf || ""}`)}`}
+            href={`mailto:hai@baind.nl?subject=${encodeURIComponent("Resultaten Quickscan")}&body=${encodeURIComponent(`Hoi Baind,\n\nIk heb de Quickscan ingevuld en scoorde ${pct}% (niveau: ${overallLabel}).\n\nIk zou graag een gesprek plannen om de resultaten te bespreken.\n\nMet vriendelijke groet,\n${contact.naam || ""}\n${contact.bedrijf || ""}`)}`}
             style={{
               ...buttonPrimaryStyle(),
               padding: "13px 24px 13px 28px",
