@@ -15,7 +15,7 @@ const tokens = {
     brand500: "#FFBF00",
     brandText: "#00302E",
     dark: {
-      bg: "#001E1D",
+      bg: "#0A2826",
       text: "#FFFFFF",
       border: "rgba(255,255,255,0.2)",
     },
@@ -472,7 +472,7 @@ export default function QuickScan() {
 
   const wrap = {
     minHeight: "100vh",
-    background: `radial-gradient(ellipse at 50% -10%, rgba(255,191,0,0.08) 0%, ${C.bg} 55%), ${C.bg}`,
+    background: `radial-gradient(ellipse at 50% 70%, #1D786F 0%, #14514A 36%, rgba(10,40,38,0) 72%), linear-gradient(180deg, #0A2826 0%, #114640 55%, #18615A 100%)`,
     color: C.white,
     fontFamily: FONT,
     display: "flex",
