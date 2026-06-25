@@ -462,9 +462,12 @@ export default function QuickScan() {
           ? data.reportFileName
           : null,
       );
-    } catch {
+    } catch (err) {
       setReportPdfUrl(null);
       setReportPdfFileName(null);
+      setSubmitError(err?.message || "Opslaan mislukt. Probeer het opnieuw.");
+      setSubmitting(false);
+      return;
     }
     setSubmitting(false);
     goToResult();
@@ -693,7 +696,7 @@ export default function QuickScan() {
           <p style={{
             marginTop: 14, fontSize: 15, color: C.muted, textAlign: "center", maxWidth: 380, lineHeight: 1.6,
           }}>
-            Laat je gegevens achter voor een persoonlijk rapport, of bekijk direct je score.
+            Laat je gegevens achter om je persoonlijke resultaat te bekijken.
           </p>
           <div style={{
             marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -782,19 +785,6 @@ export default function QuickScan() {
             >
               {submitting ? "Rapport aanmaken…" : "Bekijk mijn resultaat"}
               {!submitting ? <ArrowIcon size={16} /> : null}
-            </button>
-
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => { setSubmitError(""); setReportPdfUrl(null); goToResult(); }}
-              style={{
-                background: "none", border: "none", color: C.subtle, fontSize: 13,
-                cursor: submitting ? "not-allowed" : "pointer", fontFamily: FONT, padding: "8px 0",
-                opacity: submitting ? 0.5 : 1,
-              }}
-            >
-              Overslaan en direct resultaat bekijken
             </button>
           </div>
         </div>
