@@ -5,10 +5,12 @@ import { buildQuickscanPdfBuffer } from "../lib/quickscan-report-pdf.js";
 
 const MAX_LEN = 500;
 
+const DIM_KEYS = ["kennismaking", "houding", "organisatie"];
+
 const DIM_LABELS = {
-  merkfundament: "Merkfundament",
-  aiadoptie: "AI-adoptie",
-  consistentie: "Consistentie",
+  kennismaking: "Kennismaking",
+  houding: "Houding",
+  organisatie: "Organisatie",
 };
 
 function clean(s, max = MAX_LEN) {
@@ -102,13 +104,27 @@ export default async function handler(req, res) {
 
   const dimScores = payload.dimScores && typeof payload.dimScores === "object" ? payload.dimScores : {};
   const dimMax = payload.dimMax && typeof payload.dimMax === "object" ? payload.dimMax : {};
+  const dimPct = payload.dimPct && typeof payload.dimPct === "object" ? payload.dimPct : {};
+  const dimLevel = payload.dimLevel && typeof payload.dimLevel === "object" ? payload.dimLevel : {};
 
-  const dimRows = ["merkfundament", "aiadoptie", "consistentie"].map((key) => ({
-    key,
-    label: DIM_LABELS[key] || key,
-    score: Number(dimScores[key]) || 0,
-    max: Number(dimMax[key]) || 0,
-  }));
+  const dimRows = DIM_KEYS.map((key) => {
+    const score = Number(dimScores[key]) || 0;
+    const max = Number(dimMax[key]) || 0;
+    const pctVal =
+      typeof dimPct[key] === "number"
+        ? Math.max(0, Math.min(100, Math.round(dimPct[key])))
+        : max > 0
+          ? Math.round((score / max) * 100)
+          : 0;
+    return {
+      key,
+      label: DIM_LABELS[key] || key,
+      score,
+      max,
+      pct: pctVal,
+      level: typeof dimLevel[key] === "string" ? dimLevel[key].slice(0, 40) : "",
+    };
+  });
 
   const id = randomUUID();
   const submittedAt = new Date().toISOString();
@@ -126,7 +142,7 @@ export default async function handler(req, res) {
       pct: pct ?? 0,
       overallLabel: overallLabel || "—",
       dimRows,
-      dimScores,
+      dimPct: Object.fromEntries(dimRows.map((r) => [r.key, r.pct])),
     });
   } catch (e) {
     console.error("PDF generation failed:", e);

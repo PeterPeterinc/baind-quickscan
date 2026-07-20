@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
-import consistentieIcon from "./consistentie-icon.png";
+import { useState, useEffect, useMemo } from "react";
 import baindLogoWit from "./baind-logo-wit.png";
 
 /*
-  BAIND QUICKSCAN  AI & Merkconsistentie
+  BAIND QUICKSCAN — AI-adoptie (laagdrempelige start)
   Styled with the Baind Design System tokens (Figma).
   Font: Rethink Sans — Regular 400 voor display/headings met negatieve
   letter-spacing, Medium 500 voor H5/H6/links/labels/buttons.
@@ -52,16 +51,14 @@ const tokens = {
     textMain: 20, textSmall: 16, textLink: 16,
   },
   letterSpacing: {
-    display: "-0.0114em", // -1 / 88
-    h1: "-0.047em",       // -3 / 64
-    h2: "-0.0417em",      // -2 / 48
-    h3: "-0.0313em",      // -1 / 32
+    display: "-0.0114em",
+    h1: "-0.047em",
+    h2: "-0.0417em",
+    h3: "-0.0313em",
     h4: "0",
   },
 };
 
-// Accent / state colors (kept outside the Figma token contract, used for the
-// quickscan's advice/results visualisations).
 const C = {
   bg: tokens.color.dark.bg,
   card: "#0C3331",
@@ -91,8 +88,6 @@ const C = {
 const FONT = `'Rethink Sans', 'Plus Jakarta Sans', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 const MONO = `'JetBrains Mono', 'SF Mono', 'Fira Code', monospace`;
 
-// Reusable button style factory matching the Figma button/primary spec
-// (bg/border/text swap on hover, 2px border, radius/main).
 const buttonPrimaryStyle = ({ submitting = false } = {}) => ({
   background: submitting ? C.border : tokens.color.button.primary.bg,
   color: submitting ? C.white : tokens.color.button.primary.text,
@@ -118,134 +113,339 @@ const hoverPrimaryOff = (e) => {
   e.currentTarget.style.color = tokens.color.button.primary.text;
 };
 
-function RegisteredIcon({ size = 14 }) {
-  const boxSize = Math.round(size * 1.25);
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: boxSize,
-        height: boxSize,
-        borderRadius: "50%",
-        border: `1.5px solid currentColor`,
-        fontFamily: FONT,
-        fontSize: Math.round(boxSize * 0.7),
-        fontWeight: 700,
-        lineHeight: 1,
-        color: "currentColor",
-        flexShrink: 0,
-        boxSizing: "border-box",
-        paddingTop: 1,
-      }}
-    >
-      R
-    </span>
-  );
-}
-
 const DIMENSIONS = {
-  merkfundament: { label: "Merkfundament", IconComp: RegisteredIcon, color: C.accent, dimColor: C.accentDim },
-  aiadoptie: { label: "AI-adoptie", icon: "\u26A1", color: C.teal, dimColor: C.dimGreen },
-  consistentie: { label: "Consistentie", iconSrc: consistentieIcon, color: C.accent, dimColor: C.accentDim },
+  kennismaking: { label: "Kennismaking", icon: "✦", color: C.accent, dimColor: C.accentDim },
+  houding: { label: "Houding", icon: "◎", color: C.teal, dimColor: C.dimGreen },
+  organisatie: { label: "Organisatie", icon: "⬡", color: C.accent, dimColor: C.accentDim },
 };
 
 function DimIcon({ dim, size = 14 }) {
-  if (dim.IconComp) {
-    const IconComp = dim.IconComp;
-    return <IconComp size={size} />;
-  }
-  if (dim.iconSrc) {
-    const imgSize = size * 1.35;
-    return <img src={dim.iconSrc} alt="" style={{
-      width: imgSize, height: imgSize,
-      filter: "brightness(0) saturate(100%) invert(75%) sepia(98%) saturate(1028%) hue-rotate(1deg) brightness(107%) contrast(104%)",
-    }} />;
-  }
-  return <span style={{ fontSize: size }}>{dim.icon}</span>;
+  return <span style={{ fontSize: size, lineHeight: 1 }}>{dim.icon}</span>;
 }
 
+const usesAi = (answers) => {
+  const v = answers.use_ai?.value;
+  return v && v !== "Nee";
+};
+
+const usesAiPrivately = (answers) => {
+  const v = answers.private_ai?.value;
+  return v === "Ja, regelmatig" || v === "Soms";
+};
+
 const QUESTIONS = [
+  // ── 1. Kennismaking met AI ──
   {
-    id: 1, dim: "merkfundament",
-    q: "Hoe goed is jullie merkidentiteit gedocumenteerd?",
-    sub: "Denk aan tone of voice, brand guidelines, visuele identiteit, do's en don'ts.",
+    id: "use_ai",
+    dim: "kennismaking",
+    type: "single",
+    q: "Gebruik jij wel eens AI?",
+    sub: "Denk aan ChatGPT, Copilot, Gemini of andere AI-tools — op het werk of privé.",
     opts: [
-      { text: "We hebben geen vastgelegde merkrichtlijnen", score: 1 },
-      { text: "Er zijn basisafspraken, maar niet alles staat op papier", score: 2 },
-      { text: "We hebben uitgebreide brand guidelines die actueel zijn", score: 3 },
-      { text: "Onze guidelines zijn levend en worden continu bijgewerkt", score: 4 },
+      { text: "Ja, regelmatig", score: 4 },
+      { text: "Af en toe", score: 3 },
+      { text: "Ik heb het geprobeerd", score: 2 },
+      { text: "Nee", score: 1 },
     ],
   },
   {
-    id: 2, dim: "merkfundament",
-    q: "Hebben jullie een vastgelegde tone of voice?",
-    sub: "Een beschrijving van hoe jullie merk klinkt in tekst en communicatie.",
+    id: "tools",
+    dim: "kennismaking",
+    type: "multi",
+    q: "Welke AI-tools heb je wel eens gebruikt?",
+    sub: "Meerdere antwoorden mogelijk.",
+    showIf: usesAi,
     opts: [
-      { text: "Nee, iedereen schrijft op eigen gevoel", score: 1 },
-      { text: "Informeel afgesproken, maar niet op papier", score: 2 },
-      { text: "Ja, gedocumenteerd en gedeeld met het team", score: 3 },
-      { text: "Ja, inclusief voorbeelden en contra-voorbeelden", score: 4 },
+      { text: "ChatGPT" },
+      { text: "Microsoft Copilot" },
+      { text: "Gemini" },
+      { text: "Claude" },
+      { text: "Midjourney" },
+      { text: "Perplexity" },
+      { text: "Anders, namelijk...", other: true },
     ],
   },
   {
-    id: 3, dim: "merkfundament",
-    q: "Hoe consistent is jullie communicatie over verschillende kanalen?",
-    sub: "Van website en social media tot offertes en e-mails.",
+    id: "free_at_work",
+    dim: "kennismaking",
+    type: "single",
+    q: "Heb je op je werk wel eens de gratis versie van ChatGPT of een andere AI-tool gebruikt?",
+    sub: "Geen goed of fout antwoord — we zijn benieuwd naar de praktijk.",
+    showIf: usesAi,
     opts: [
-      { text: "Elk kanaal heeft een eigen stijl, weinig samenhang", score: 1 },
-      { text: "Redelijk consistent, maar het verschilt per medewerker", score: 2 },
-      { text: "Grotendeels consistent dankzij duidelijke afspraken", score: 3 },
-      { text: "Volledig consistent, ons merk is overal herkenbaar", score: 4 },
+      { text: "Ja", score: 3 },
+      { text: "Nee", score: 2 },
+      { text: "Weet ik niet", score: 1 },
     ],
   },
   {
-    id: 4, dim: "aiadoptie",
-    q: "Hoe wordt AI momenteel ingezet voor communicatie en content?",
-    sub: "Denk aan ChatGPT, Copilot, Gemini of andere AI-tools.",
+    id: "use_cases",
+    dim: "kennismaking",
+    type: "multi",
+    q: "Waarvoor heb je AI gebruikt?",
+    sub: "Meerdere antwoorden mogelijk.",
+    showIf: usesAi,
     opts: [
-      { text: "We gebruiken nog geen AI voor communicatie", score: 1 },
-      { text: "Individuele medewerkers experimenteren op eigen initiatief", score: 2 },
-      { text: "We gebruiken AI structureel voor bepaalde taken", score: 3 },
-      { text: "AI is geïntegreerd in onze workflows met duidelijke richtlijnen", score: 4 },
+      { text: "Informatie opzoeken" },
+      { text: "Teksten schrijven" },
+      { text: "Samenvatten" },
+      { text: "Vertalen" },
+      { text: "Brainstormen" },
+      { text: "Afbeeldingen maken" },
+      { text: "Afbeeldingen bewerken" },
+      { text: "Anders", other: true },
     ],
   },
   {
-    id: 5, dim: "aiadoptie",
-    q: "Zijn AI-prompts afgestemd op jullie merkidentiteit?",
-    sub: "Worden er prompts gebruikt die rekening houden met jullie tone of voice en merkwaarden?",
+    id: "private_ai",
+    dim: "kennismaking",
+    type: "single",
+    q: "Gebruik je AI ook privé?",
+    sub: "Buiten je werk om, voor jezelf.",
     opts: [
-      { text: "Nee, we gebruiken standaard prompts", score: 1 },
-      { text: "Soms, maar het is niet gestandaardiseerd", score: 2 },
-      { text: "Ja, we hebben enkele merk-specifieke prompts", score: 3 },
-      { text: "Ja, we hebben een volledig prompt-framework op merk", score: 4 },
+      { text: "Ja, regelmatig", score: 4 },
+      { text: "Soms", score: 3 },
+      { text: "Nee", score: 1 },
     ],
   },
   {
-    id: 6, dim: "consistentie",
-    q: "Wie bewaakt de kwaliteit van AI-gegenereerde content?",
-    sub: "Is er een review- of goedkeuringsproces?",
+    id: "home_use",
+    dim: "kennismaking",
+    type: "multi",
+    q: "Waarvoor gebruik je AI thuis?",
+    sub: "Meerdere antwoorden mogelijk.",
+    showIf: usesAiPrivately,
     opts: [
-      { text: "Niemand, output gaat direct naar buiten", score: 1 },
-      { text: "De maker checkt het zelf, maar zonder richtlijnen", score: 2 },
-      { text: "Er is een reviewproces, maar niet specifiek voor AI-content", score: 3 },
-      { text: "Er is een specifiek QA-proces voor AI-gegenereerde content", score: 4 },
+      { text: "Recepten" },
+      { text: "Vakantie plannen" },
+      { text: "E-mails schrijven" },
+      { text: "Hobby's" },
+      { text: "Studie" },
+      { text: "Anders", other: true },
+    ],
+  },
+
+  // ── 2. Houding ten opzichte van AI ──
+  {
+    id: "attitude",
+    dim: "houding",
+    type: "single",
+    q: "Hoe kijk je naar AI?",
+    sub: "Wat is je eerste gevoel als je aan AI denkt?",
+    opts: [
+      { text: "Heel positief", score: 4 },
+      { text: "Overwegend positief", score: 3 },
+      { text: "Neutraal", score: 2 },
+      { text: "Eerder negatief", score: 1 },
+      { text: "Erg negatief", score: 1 },
     ],
   },
   {
-    id: 7, dim: "consistentie",
-    q: "Hoe herkenbaar is jullie merk in AI-gegenereerde teksten?",
-    sub: "Zou een klant het verschil merken tussen AI-content en handgeschreven content?",
+    id: "work_impact",
+    dim: "houding",
+    type: "single",
+    q: "Denk je dat AI invloed gaat hebben op jouw werk?",
+    sub: "Op korte of langere termijn.",
     opts: [
-      { text: "AI-content is duidelijk robotachtig of generiek", score: 1 },
-      { text: "Het is oké, maar mist onze unieke stem", score: 2 },
-      { text: "Redelijk herkenbaar, maar nog niet perfect", score: 3 },
-      { text: "Onze AI-content is niet te onderscheiden van handgeschreven", score: 4 },
+      { text: "Ja, veel", score: 4 },
+      { text: "Een beetje", score: 3 },
+      { text: "Nauwelijks", score: 2 },
+      { text: "Helemaal niet", score: 1 },
+    ],
+  },
+  {
+    id: "job_fear",
+    dim: "houding",
+    type: "single",
+    q: "Ben je bang dat AI jouw baan deels of helemaal overneemt?",
+    sub: "Wees eerlijk — dit helpt om gerichte ondersteuning te bieden.",
+    opts: [
+      { text: "Ja", score: 1 },
+      { text: "Misschien", score: 2 },
+      { text: "Nee", score: 4 },
+    ],
+  },
+  {
+    id: "learn_more",
+    dim: "houding",
+    type: "single",
+    q: "Zou je graag meer over AI willen leren?",
+    sub: "Bijvoorbeeld via workshops, tips of praktische voorbeelden.",
+    opts: [
+      { text: "Ja", score: 4 },
+      { text: "Misschien", score: 3 },
+      { text: "Nee", score: 1 },
+    ],
+  },
+
+  // ── 3. De organisatie ──
+  {
+    id: "org_policy",
+    dim: "organisatie",
+    type: "single",
+    q: "Heeft jouw organisatie afspraken gemaakt over het gebruik van AI?",
+    sub: "Denk aan richtlijnen, policies of interne afspraken.",
+    opts: [
+      { text: "Ja", score: 4 },
+      { text: "Nee", score: 2 },
+      { text: "Weet ik niet", score: 1 },
+    ],
+  },
+  {
+    id: "org_owner",
+    dim: "organisatie",
+    type: "single",
+    q: "Is er iemand verantwoordelijk voor AI binnen de organisatie?",
+    sub: "Een aanspreekpunt, werkgroep of formele rol.",
+    opts: [
+      { text: "Ja", score: 4 },
+      { text: "Nee", score: 2 },
+      { text: "Weet ik niet", score: 1 },
+    ],
+  },
+  {
+    id: "org_stimulate",
+    dim: "organisatie",
+    type: "single",
+    q: "Wordt AI binnen jouw organisatie actief gestimuleerd?",
+    sub: "Via training, tools, of aanmoediging van leidinggevenden.",
+    opts: [
+      { text: "Ja", score: 4 },
+      { text: "Een beetje", score: 3 },
+      { text: "Nee", score: 1 },
+      { text: "Weet ik niet", score: 1 },
+    ],
+  },
+  {
+    id: "org_knowledge",
+    dim: "organisatie",
+    type: "single",
+    q: "Hoe schat jij de AI-kennis binnen jouw organisatie in?",
+    sub: "Het algemene niveau onder collega’s.",
+    opts: [
+      { text: "Erg hoog", score: 4 },
+      { text: "Redelijk", score: 3 },
+      { text: "Gemiddeld", score: 2 },
+      { text: "Beperkt", score: 1 },
+      { text: "Heel laag", score: 1 },
     ],
   },
 ];
+
+const AI_FACTS = [
+  "Wist je dat 78% van de medewerkers AI al privé gebruikt, maar dit op het werk niet durft te vertellen?",
+  "Wist je dat organisaties met duidelijke AI-afspraken tot 2× sneller van experiment naar resultaat gaan?",
+  "Wist je dat de meeste mensen AI vooral inzetten om te schrijven — terwijl brainstormen vaak de grootste tijdwinst oplevert?",
+];
+
+const DEPENDENT_IDS = {
+  use_ai: ["tools", "free_at_work", "use_cases"],
+  private_ai: ["home_use"],
+};
+
+function multiScore(count) {
+  if (count <= 0) return 0;
+  if (count === 1) return 2;
+  if (count === 2) return 3;
+  return 4;
+}
+
+function getVisibleQuestions(answers) {
+  return QUESTIONS.filter((q) => !q.showIf || q.showIf(answers));
+}
+
+function levelFromPct(p) {
+  if (p <= 35) return "Laag";
+  if (p <= 55) return "Basis";
+  if (p <= 75) return "Stevig";
+  return "Sterk";
+}
+
+function profileFromPct(p) {
+  if (p <= 35) {
+    return {
+      label: "Starter",
+      sub: "AI voelt nog nieuw. Dat is een prima startpunt — met kleine, veilige stappen groeit het snel.",
+    };
+  }
+  if (p <= 55) {
+    return {
+      label: "Ontdekker",
+      sub: "Je hebt al een eerste beeld. De volgende stap is bewustere inzet op het werk, met duidelijke kaders.",
+    };
+  }
+  if (p <= 75) {
+    return {
+      label: "Gevorderd",
+      sub: "Sterke basis in ervaring, houding of organisatie. Nu is het tijd om de zwakkere dimensie bij te trekken.",
+    };
+  }
+  return {
+    label: "Voorloper",
+    sub: "Je staat ver. Focus op verdieping: veilig gebruik, prompts, processen en kansen per afdeling.",
+  };
+}
+
+/** Berekent scores: per dimensie een %, overall = gemiddelde van de 3 dimensies. */
+function computeResults(answers) {
+  const visibleQs = getVisibleQuestions(answers);
+  const dimScores = {};
+  const dimMax = {};
+
+  visibleQs.forEach((q) => {
+    const a = answers[q.id];
+    if (!a) return;
+    dimScores[q.dim] = (dimScores[q.dim] || 0) + (a.score || 0);
+    dimMax[q.dim] = (dimMax[q.dim] || 0) + 4;
+  });
+
+  const dimKeys = Object.keys(DIMENSIONS);
+  const dimPct = {};
+  const dimLevel = {};
+
+  dimKeys.forEach((k) => {
+    const score = dimScores[k] || 0;
+    const max = dimMax[k] || 0;
+    // Geen antwoorden in deze dimensie → 0%
+    const pct = max > 0 ? Math.round((score / max) * 100) : 0;
+    dimScores[k] = score;
+    dimMax[k] = max || 4;
+    dimPct[k] = pct;
+    dimLevel[k] = levelFromPct(pct);
+  });
+
+  // Overall = gemiddelde van de drie dimensies (gelijke weging)
+  const pct = Math.round(
+    dimKeys.reduce((sum, k) => sum + dimPct[k], 0) / dimKeys.length,
+  );
+  const profile = profileFromPct(pct);
+
+  return {
+    dimScores,
+    dimMax,
+    dimPct,
+    dimLevel,
+    pct,
+    overallLabel: profile.label,
+    overallSub: profile.sub,
+  };
+}
+
+/** Bouwt de stappenlijst: vragen + AI-fact na elke 5 vragen. */
+function buildSteps(answers) {
+  const qs = getVisibleQuestions(answers);
+  const steps = [];
+  let factIdx = 0;
+  qs.forEach((q, i) => {
+    steps.push({ type: "question", q });
+    const qNum = i + 1;
+    if (qNum % 5 === 0 && i < qs.length - 1 && factIdx < AI_FACTS.length) {
+      steps.push({ type: "fact", text: AI_FACTS[factIdx], id: `fact_${factIdx}` });
+      factIdx += 1;
+    }
+  });
+  return steps;
+}
 
 function BaindLogo({ height = 28 }) {
   return (
@@ -276,7 +476,7 @@ function ArrowIcon({ size = 16, color = "currentColor" }) {
 
 function ProgressDots({ current, total }) {
   return (
-    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} style={{
           width: i === current ? 24 : 8,
@@ -298,8 +498,8 @@ function Ring({ pct, color, size = 100, strokeWidth = 4, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={C.divider} strokeWidth={strokeWidth} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={C.divider} strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)" }} />
       </svg>
@@ -314,40 +514,89 @@ function Ring({ pct, color, size = 100, strokeWidth = 4, children }) {
   );
 }
 
-function getAdvice(dimScores) {
+function getAdvice(dimPct) {
   const out = [];
-  const { merkfundament: mf = 0, aiadoptie: ai = 0, consistentie: co = 0 } = dimScores;
-
-  if (mf <= 5) {
-    out.push({ dim: "merkfundament", prio: "hoog", text: "Begin met het vastleggen van jullie merkidentiteit. Zonder een stevig fundament kan AI nooit consistent op-merk communiceren. Denk aan een tone of voice document, merkwaarden en communicatierichtlijnen.", cta: "Baind helpt jullie merkfundament te vertalen naar een AI-klare basis." });
-  } else if (mf <= 9) {
-    out.push({ dim: "merkfundament", prio: "middel", text: "Jullie merkbasis staat, maar kan aangescherpt worden voor AI-gebruik. Specifieke voorbeelden en contra-voorbeelden maken het verschil.", cta: "Baind's merkexperts helpen jullie guidelines AI-proof te maken." });
+  const k = (dimPct.kennismaking || 0) / 100;
+  if (k <= 0.4) {
+    out.push({
+      dim: "kennismaking",
+      prio: "hoog",
+      text: "AI voelt nog nieuw. Dat is een prima startpunt: met een paar concrete, veilige use cases wordt de drempel snel lager.",
+      cta: "Baind helpt teams om laagdrempelig te starten met AI die past bij hun werk.",
+    });
+  } else if (k <= 0.7) {
+    out.push({
+      dim: "kennismaking",
+      prio: "middel",
+      text: "Je hebt al ervaring met AI. De volgende stap is om die ervaring bewuster en consistenter in te zetten op het werk.",
+      cta: "Baind vertaalt losse experimenten naar praktische werkwijzen voor het hele team.",
+    });
   } else {
-    out.push({ dim: "merkfundament", prio: "laag", text: "Uitstekend merkfundament! Jullie zijn klaar om dit te vertalen naar een AI-omgeving die jullie merk versterkt.", cta: "Met Baind zetten jullie dit fundament om in een krachtige AI-omgeving." });
+    out.push({
+      dim: "kennismaking",
+      prio: "laag",
+      text: "Sterke kennismaking met AI. Je bent klaar om dieper te gaan: veilig gebruik, prompts en processen.",
+      cta: "Met Baind zet je ervaring om in structurele AI-vaardigheden in de organisatie.",
+    });
   }
 
-  if (ai <= 3) {
-    out.push({ dim: "aiadoptie", prio: "hoog", text: "Er liggen grote kansen om AI in te zetten voor communicatie. Start met concrete use cases en bouw van daaruit op.", cta: "Baind levert concrete toepassingen in de vorm van merk-specifieke prompts." });
-  } else if (ai <= 6) {
-    out.push({ dim: "aiadoptie", prio: "middel", text: "Goede start met AI! De volgende stap is om van losse experimenten naar een gestructureerde aanpak te gaan, afgestemd op jullie merk.", cta: "Baind helpt jullie AI-gebruik te structureren en op te schalen." });
+  const h = (dimPct.houding || 0) / 100;
+  if (h <= 0.4) {
+    out.push({
+      dim: "houding",
+      prio: "hoog",
+      text: "Er is terughoudendheid of onzekerheid over AI. Ruimte voor vragen en duidelijke kaders helpt om vertrouwen op te bouwen.",
+      cta: "Baind begeleidt gesprekken over kansen én zorgen, zodat adoptie veilig voelt.",
+    });
+  } else if (h <= 0.7) {
+    out.push({
+      dim: "houding",
+      prio: "middel",
+      text: "Je houding is open genoeg om verder te groeien. Gerichte leerervaringen maken het verschil tussen ‘interessant’ en ‘ik gebruik het echt’.",
+      cta: "Baind biedt workshops die aansluiten bij jouw rol en leerstijl.",
+    });
   } else {
-    out.push({ dim: "aiadoptie", prio: "laag", text: "Jullie AI-adoptie is ver gevorderd. Focus nu op het maximaal afstemmen van alle AI-output op jullie merkidentiteit.", cta: "Baind optimaliseert jullie bestaande AI-setup voor maximale merkconsistentie." });
+    out.push({
+      dim: "houding",
+      prio: "laag",
+      text: "Positieve houding en leergierigheid — een sterke basis voor AI-adoptie in jouw team.",
+      cta: "Baind helpt die energie te kanaliseren naar concrete toepassingen.",
+    });
   }
 
-  if (co <= 3) {
-    out.push({ dim: "consistentie", prio: "hoog", text: "De AI-output sluit nog niet goed aan bij jullie merk. Dit is het gebied waar de meeste winst te behalen is, en waar Baind het verschil maakt.", cta: "Baind traint AI specifiek op jullie merk, zodat output direct herkenbaar is." });
-  } else if (co <= 6) {
-    out.push({ dim: "consistentie", prio: "middel", text: "De basis is er, maar finetuning is nodig. Met de juiste prompts en training wordt jullie AI-content niet te onderscheiden van handgeschreven tekst.", cta: "Baind's merkexperts finetunen jullie AI voor perfecte merkconsistentie." });
+  const o = (dimPct.organisatie || 0) / 100;
+  if (o <= 0.4) {
+    out.push({
+      dim: "organisatie",
+      prio: "hoog",
+      text: "AI leeft waarschijnlijk vooral bij individuen. Zonder afspraken en eigenaarschap blijft adoptie versnipperd en risicovol.",
+      cta: "Baind helpt organisaties om AI-beleid, rollen en stimulerende kaders neer te zetten.",
+    });
+  } else if (o <= 0.7) {
+    out.push({
+      dim: "organisatie",
+      prio: "middel",
+      text: "Er is al iets van structuur, maar nog geen volledige duidelijkheid. Meer zichtbaarheid en stimulans versnellen het tempo.",
+      cta: "Baind scherpt AI-governance en interne activatie aan — zonder zware bureaucratie.",
+    });
   } else {
-    out.push({ dim: "consistentie", prio: "laag", text: "Indrukwekkende consistentie! Jullie zijn een voorbeeld van hoe AI en merk samen kunnen gaan.", cta: "Met Baind schalen jullie dit op naar alle afdelingen en touchpoints." });
+    out.push({
+      dim: "organisatie",
+      prio: "laag",
+      text: "Jullie organisatie lijkt AI serieus te nemen. Tijd om kennis, tools en processen verder te professionaliseren.",
+      cta: "Met Baind til je bestaande AI-afspraken naar een volgend niveau.",
+    });
   }
+
   return out;
 }
 
 export default function QuickScan() {
   const [phase, setPhase] = useState("intro");
-  const [qIdx, setQIdx] = useState(0);
+  const [stepIdx, setStepIdx] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [draftMulti, setDraftMulti] = useState([]);
+  const [draftOther, setDraftOther] = useState("");
   const [sliding, setSliding] = useState(false);
   const [contact, setContact] = useState({ naam: "", bedrijf: "", email: "", telefoon: "" });
   const [revealed, setRevealed] = useState(false);
@@ -356,6 +605,13 @@ export default function QuickScan() {
   const [reportPdfUrl, setReportPdfUrl] = useState(null);
   const [reportPdfFileName, setReportPdfFileName] = useState(null);
 
+  const steps = useMemo(() => buildSteps(answers), [answers]);
+  const step = steps[stepIdx] || steps[0];
+  const questionSteps = steps.filter((s) => s.type === "question");
+  const questionNumber = step?.type === "question"
+    ? questionSteps.findIndex((s) => s.q.id === step.q.id) + 1
+    : questionSteps.length;
+
   useEffect(() => {
     const l = document.createElement("link");
     l.href = "https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400..800;1,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap";
@@ -363,15 +619,80 @@ export default function QuickScan() {
     document.head.appendChild(l);
   }, []);
 
-  const pick = (qId, score) => {
+  // Sync multi-draft when landing on a multi question
+  useEffect(() => {
+    if (phase !== "scan" || !step || step.type !== "question" || step.q.type !== "multi") return;
+    const existing = answers[step.q.id];
+    setDraftMulti(existing?.values || []);
+    setDraftOther(existing?.other || "");
+  }, [phase, stepIdx, step?.type, step?.q?.id]);
+
+  const advanceFrom = (nextAnswers) => {
+    const nextSteps = buildSteps(nextAnswers);
+    setSliding(true);
+    setTimeout(() => {
+      if (stepIdx < nextSteps.length - 1) {
+        // Stay on same logical position when flow shrinks; advance by 1 in new flow
+        const currentId = steps[stepIdx]?.type === "question"
+          ? steps[stepIdx].q.id
+          : steps[stepIdx]?.id;
+        let nextIndex = stepIdx + 1;
+        // If current step still exists, find it and go to the next
+        const curPos = nextSteps.findIndex((s) =>
+          s.type === "question" ? s.q.id === currentId : s.id === currentId,
+        );
+        if (curPos >= 0) nextIndex = curPos + 1;
+        if (nextIndex >= nextSteps.length) setPhase("contact");
+        else setStepIdx(nextIndex);
+      } else {
+        setPhase("contact");
+      }
+      setSliding(false);
+    }, 280);
+  };
+
+  const pickSingle = (q, opt) => {
+    if (sliding) return;
+    let next = { ...answers };
+    if (DEPENDENT_IDS[q.id]) {
+      for (const id of DEPENDENT_IDS[q.id]) delete next[id];
+    }
+    next[q.id] = { type: "single", value: opt.text, score: opt.score };
+    setAnswers(next);
+    advanceFrom(next);
+  };
+
+  const toggleMulti = (optText) => {
+    setDraftMulti((prev) =>
+      prev.includes(optText) ? prev.filter((t) => t !== optText) : [...prev, optText],
+    );
+  };
+
+  const confirmMulti = (q) => {
+    if (sliding || draftMulti.length === 0) return;
+    const otherOpt = q.opts.find((o) => o.other);
+    if (otherOpt && draftMulti.includes(otherOpt.text) && !draftOther.trim()) return;
+    const next = {
+      ...answers,
+      [q.id]: {
+        type: "multi",
+        values: draftMulti,
+        other: draftOther.trim(),
+        score: multiScore(draftMulti.length),
+      },
+    };
+    setAnswers(next);
+    advanceFrom(next);
+  };
+
+  const continueFact = () => {
     if (sliding) return;
     setSliding(true);
-    setAnswers(p => ({ ...p, [qId]: score }));
     setTimeout(() => {
-      if (qIdx < QUESTIONS.length - 1) setQIdx(i => i + 1);
+      if (stepIdx < steps.length - 1) setStepIdx((i) => i + 1);
       else setPhase("contact");
       setSliding(false);
-    }, 300);
+    }, 280);
   };
 
   useEffect(() => {
@@ -380,39 +701,46 @@ export default function QuickScan() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (!step) return;
+      if (step.type === "fact") {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          continueFact();
+        }
+        return;
+      }
+      const q = step.q;
+      if (q.type === "multi") {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          confirmMulti(q);
+        }
+        return;
+      }
       const key = e.key.toLowerCase();
       const idx = key.charCodeAt(0) - 97;
-      const q = QUESTIONS[qIdx];
       if (idx >= 0 && idx < q.opts.length) {
         e.preventDefault();
-        pick(q.id, q.opts[idx].score);
+        pickSingle(q, q.opts[idx]);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [phase, qIdx, sliding]);
+  }, [phase, stepIdx, sliding, step, draftMulti, draftOther, answers]);
 
-  const goBack = () => { if (qIdx > 0) setQIdx(i => i - 1); };
+  const goBack = () => {
+    if (stepIdx > 0) setStepIdx((i) => i - 1);
+  };
 
-  const total = Object.values(answers).reduce((a, b) => a + b, 0);
-  const maxTotal = QUESTIONS.length * 4;
-  const pct = Math.round((total / maxTotal) * 100);
-
-  const dimScores = {};
-  const dimMax = {};
-  QUESTIONS.forEach(q => {
-    dimScores[q.dim] = (dimScores[q.dim] || 0) + (answers[q.id] || 0);
-    dimMax[q.dim] = (dimMax[q.dim] || 0) + 4;
-  });
-
-  const overallLabel = pct <= 35 ? "Starter" : pct <= 60 ? "Explorer" : pct <= 82 ? "Gevorderd" : "Expert";
-  const overallSub = pct <= 35
-    ? "Jullie staan aan het begin. Dat betekent volop ruimte om te groeien."
-    : pct <= 60
-    ? "Een goede basis is gelegd. De volgende stappen maken het verschil."
-    : pct <= 82
-    ? "Jullie zijn al goed op weg. Tijd om door te pakken."
-    : "Sterke positie! Kleine optimalisaties kunnen nog meer impact maken.";
+  const {
+    dimScores,
+    dimMax,
+    dimPct,
+    dimLevel,
+    pct,
+    overallLabel,
+    overallSub,
+  } = computeResults(answers);
 
   const goToResult = () => {
     setPhase("result");
@@ -435,39 +763,36 @@ export default function QuickScan() {
     const wantPdfDownload = Boolean(naam && bedrijf && email && telefoon);
     setSubmitError("");
     setSubmitting(true);
+    setReportPdfUrl(null);
+    setReportPdfFileName(null);
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           wantPdfDownload,
-          contact: {
-            naam,
-            bedrijf,
-            email,
-            telefoon,
-          },
+          contact: { naam, bedrijf, email, telefoon },
           answers,
           dimScores,
           dimMax,
+          dimPct,
+          dimLevel,
           pct,
           overallLabel,
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
-      setReportPdfUrl(typeof data.reportUrl === "string" ? data.reportUrl : null);
-      setReportPdfFileName(
-        typeof data.reportUrl === "string" && typeof data.reportFileName === "string"
-          ? data.reportFileName
-          : null,
-      );
-    } catch (err) {
-      setReportPdfUrl(null);
-      setReportPdfFileName(null);
-      setSubmitError(err?.message || "Opslaan mislukt. Probeer het opnieuw.");
-      setSubmitting(false);
-      return;
+      if (res.ok) {
+        setReportPdfUrl(typeof data.reportUrl === "string" ? data.reportUrl : null);
+        setReportPdfFileName(
+          typeof data.reportUrl === "string" && typeof data.reportFileName === "string"
+            ? data.reportFileName
+            : null,
+        );
+      }
+      // Lokaal (zonder Vercel Blob) of API-fout: gewoon door naar resultaat zonder PDF
+    } catch {
+      // Netwerk/API niet beschikbaar — resultaat tonen zonder opslaan
     }
     setSubmitting(false);
     goToResult();
@@ -491,7 +816,6 @@ export default function QuickScan() {
     return (
       <div style={wrap}>
         <div style={{ ...inner, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "92vh", textAlign: "center" }}>
-          
           <div style={{
             marginTop: 48,
             display: "flex",
@@ -521,8 +845,8 @@ export default function QuickScan() {
             lineHeight: 1,
             letterSpacing: tokens.letterSpacing.h1,
           }}>
-            Hoe AI-ready<br/>
-            <span style={{ color: C.accent }}>is jouw merk?</span>
+            Hoe staat jouw<br />
+            <span style={{ color: C.accent }}>team tegenover AI?</span>
           </h1>
 
           <p style={{
@@ -532,11 +856,11 @@ export default function QuickScan() {
             color: C.muted,
             maxWidth: 420,
           }}>
-            Ontdek in 2 minuten waar de grootste kansen liggen om AI in te zetten, zonder je merkidentiteit te verliezen.
+            Een korte, laagdrempelige scan over ervaring, houding en jullie organisatie. Geen technische kennis nodig.
           </p>
 
           <button
-            onClick={() => setPhase("scan")}
+            onClick={() => { setPhase("scan"); setStepIdx(0); }}
             style={{
               ...buttonPrimaryStyle(),
               marginTop: 44,
@@ -553,7 +877,7 @@ export default function QuickScan() {
           </button>
 
           <div style={{ marginTop: 56, display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
-            {Object.values(DIMENSIONS).map(d => (
+            {Object.values(DIMENSIONS).map((d) => (
               <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.subtle }}>
                 <span style={{ color: d.color, fontSize: 14, display: "inline-flex", alignItems: "center" }}><DimIcon dim={d} size={14} /></span>
                 {d.label}
@@ -562,7 +886,7 @@ export default function QuickScan() {
           </div>
 
           <p style={{ marginTop: 52, fontSize: 12, color: C.subtle, fontFamily: MONO }}>
-            7 vragen · 3 dimensies · direct resultaat
+            ± 3 minuten · 3 dimensies · direct inzicht
           </p>
         </div>
       </div>
@@ -570,9 +894,76 @@ export default function QuickScan() {
   }
 
   // SCAN
-  if (phase === "scan") {
-    const q = QUESTIONS[qIdx];
+  if (phase === "scan" && step) {
+    // FACT interstitial
+    if (step.type === "fact") {
+      return (
+        <div style={wrap}>
+          <div style={{ ...inner, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "88vh" }}>
+            <div style={{
+              display: "flex", width: "fit-content", padding: "6px 16px", borderRadius: 100,
+              background: C.accentDim, fontSize: 12, fontWeight: 600,
+              color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: MONO,
+            }}>
+              Wist je dat…
+            </div>
+
+            <div style={{
+              marginTop: 36,
+              opacity: sliding ? 0 : 1,
+              transform: sliding ? "translateX(24px)" : "translateX(0)",
+              transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+            }}>
+              <p style={{
+                fontSize: `clamp(22px, 4.5vw, ${tokens.fontSize.h3}px)`,
+                fontWeight: 400,
+                lineHeight: 1.35,
+                letterSpacing: tokens.letterSpacing.h3,
+                margin: 0,
+                color: C.white,
+              }}>
+                {step.text}
+              </p>
+            </div>
+
+            <button
+              onClick={continueFact}
+              style={{
+                ...buttonPrimaryStyle(),
+                marginTop: 48,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                alignSelf: "flex-start",
+              }}
+              onMouseEnter={hoverPrimaryOn}
+              onMouseLeave={hoverPrimaryOff}
+            >
+              Verder
+              <ArrowIcon size={16} />
+            </button>
+
+            {stepIdx > 0 && (
+              <button onClick={goBack} style={{
+                marginTop: 20, background: "none", border: "none",
+                color: C.subtle, fontSize: 13, cursor: "pointer", fontFamily: FONT, padding: "8px 0",
+                alignSelf: "flex-start",
+              }}>
+                Vorige
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const q = step.q;
     const dim = DIMENSIONS[q.dim];
+    const isMulti = q.type === "multi";
+    const otherOpt = q.opts.find((o) => o.other);
+    const otherSelected = otherOpt && draftMulti.includes(otherOpt.text);
+    const multiReady = draftMulti.length > 0 && !(otherSelected && !draftOther.trim());
 
     return (
       <div style={wrap}>
@@ -587,11 +978,11 @@ export default function QuickScan() {
               {dim.label}
             </div>
             <div style={{ fontSize: 13, color: C.subtle, fontFamily: MONO }}>
-              {qIdx + 1}/{QUESTIONS.length}
+              {questionNumber}/{questionSteps.length}
             </div>
           </div>
 
-          <ProgressDots current={qIdx} total={QUESTIONS.length} />
+          <ProgressDots current={stepIdx} total={steps.length} />
 
           <div style={{
             marginTop: 40,
@@ -619,11 +1010,17 @@ export default function QuickScan() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {q.opts.map((opt, i) => {
-                const sel = answers[q.id] === opt.score;
+                const sel = isMulti
+                  ? draftMulti.includes(opt.text)
+                  : answers[q.id]?.value === opt.text;
                 return (
                   <button
-                    key={i}
-                    onClick={() => pick(q.id, opt.score)}
+                    key={opt.text}
+                    type="button"
+                    onClick={() => {
+                      if (isMulti) toggleMulti(opt.text);
+                      else pickSingle(q, opt);
+                    }}
                     style={{
                       display: "flex", alignItems: "center", gap: 14,
                       background: sel ? C.accentDim : C.card,
@@ -638,8 +1035,8 @@ export default function QuickScan() {
                       fontFamily: FONT,
                       transition: "all 0.18s ease",
                     }}
-                    onMouseEnter={e => { if (!sel) { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = C.cardHover; }}}
-                    onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}}
+                    onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = C.cardHover; } }}
+                    onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
                   >
                     <span style={{
                       minWidth: 30, height: 30, borderRadius: tokens.radius.small,
@@ -649,16 +1046,62 @@ export default function QuickScan() {
                       fontSize: 12, fontWeight: 700, fontFamily: MONO,
                       transition: "all 0.18s ease",
                     }}>
-                      {String.fromCharCode(65 + i)}
+                      {isMulti ? (sel ? "✓" : String.fromCharCode(65 + i)) : String.fromCharCode(65 + i)}
                     </span>
                     {opt.text}
                   </button>
                 );
               })}
             </div>
+
+            {isMulti && otherSelected && (
+              <input
+                type="text"
+                placeholder="Namelijk…"
+                value={draftOther}
+                onChange={(e) => setDraftOther(e.target.value)}
+                style={{
+                  marginTop: 12,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  background: C.card,
+                  border: `${tokens.borderWidth.main}px solid ${C.border}`,
+                  borderRadius: tokens.radius.main,
+                  padding: "14px 18px",
+                  fontSize: 15,
+                  color: C.white,
+                  fontFamily: FONT,
+                  outline: "none",
+                }}
+                onFocus={(e) => { e.target.style.borderColor = C.teal; }}
+                onBlur={(e) => { e.target.style.borderColor = C.border; }}
+              />
+            )}
+
+            {isMulti && (
+              <button
+                type="button"
+                disabled={!multiReady}
+                onClick={() => confirmMulti(q)}
+                style={{
+                  ...buttonPrimaryStyle(),
+                  marginTop: 24,
+                  cursor: multiReady ? "pointer" : "not-allowed",
+                  opacity: multiReady ? 1 : 0.45,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+                onMouseEnter={(e) => { if (multiReady) hoverPrimaryOn(e); }}
+                onMouseLeave={(e) => { if (multiReady) hoverPrimaryOff(e); }}
+              >
+                Volgende
+                <ArrowIcon size={16} />
+              </button>
+            )}
           </div>
 
-          {qIdx > 0 && (
+          {stepIdx > 0 && (
             <button onClick={goBack} style={{
               marginTop: 20, background: "none", border: "none",
               color: C.subtle, fontSize: 13, cursor: "pointer", fontFamily: FONT, padding: "8px 0",
@@ -690,7 +1133,7 @@ export default function QuickScan() {
             letterSpacing: tokens.letterSpacing.h2,
             lineHeight: 1.2,
           }}>
-            Nog een stap naar<br/>jullie resultaat
+            Nog een stap naar<br />jullie resultaat
           </h2>
 
           <p style={{
@@ -711,8 +1154,8 @@ export default function QuickScan() {
                 fontSize: 11, fontWeight: 700, color: C.subtle, cursor: "default", flexShrink: 0,
                 fontFamily: MONO,
               }}
-              onMouseEnter={e => { e.currentTarget.querySelector("[data-tip]").style.opacity = 1; e.currentTarget.querySelector("[data-tip]").style.pointerEvents = "auto"; }}
-              onMouseLeave={e => { e.currentTarget.querySelector("[data-tip]").style.opacity = 0; e.currentTarget.querySelector("[data-tip]").style.pointerEvents = "none"; }}
+              onMouseEnter={(e) => { e.currentTarget.querySelector("[data-tip]").style.opacity = 1; e.currentTarget.querySelector("[data-tip]").style.pointerEvents = "auto"; }}
+              onMouseLeave={(e) => { e.currentTarget.querySelector("[data-tip]").style.opacity = 0; e.currentTarget.querySelector("[data-tip]").style.pointerEvents = "none"; }}
             >
               i
               <span
@@ -740,13 +1183,13 @@ export default function QuickScan() {
               { k: "bedrijf", ph: "Bedrijfsnaam" },
               { k: "email", ph: "E-mailadres", type: "email" },
               { k: "telefoon", ph: "Telefoonnummer" },
-            ].map(f => (
+            ].map((f) => (
               <input
                 key={f.k}
                 type={f.type || "text"}
                 placeholder={f.ph}
                 value={contact[f.k]}
-                onChange={e => setContact(p => ({ ...p, [f.k]: e.target.value }))}
+                onChange={(e) => setContact((p) => ({ ...p, [f.k]: e.target.value }))}
                 style={{
                   background: C.card,
                   border: `${tokens.borderWidth.main}px solid ${C.border}`,
@@ -758,8 +1201,8 @@ export default function QuickScan() {
                   outline: "none",
                   transition: "border-color 0.2s",
                 }}
-                onFocus={e => e.target.style.borderColor = C.teal}
-                onBlur={e => e.target.style.borderColor = C.border}
+                onFocus={(e) => { e.target.style.borderColor = C.teal; }}
+                onBlur={(e) => { e.target.style.borderColor = C.border; }}
               />
             ))}
 
@@ -780,8 +1223,8 @@ export default function QuickScan() {
                 opacity: submitting ? 0.85 : 1,
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
               }}
-              onMouseEnter={e => { if (!submitting) hoverPrimaryOn(e); }}
-              onMouseLeave={e => { if (!submitting) hoverPrimaryOff(e); }}
+              onMouseEnter={(e) => { if (!submitting) hoverPrimaryOn(e); }}
+              onMouseLeave={(e) => { if (!submitting) hoverPrimaryOff(e); }}
             >
               {submitting ? "Rapport aanmaken…" : "Bekijk mijn resultaat"}
               {!submitting ? <ArrowIcon size={16} /> : null}
@@ -793,7 +1236,7 @@ export default function QuickScan() {
   }
 
   // RESULT
-  const advice = getAdvice(dimScores);
+  const advice = getAdvice(dimPct);
   const prioColor = { hoog: C.red, middel: C.orange, laag: C.green };
   const prioBg = { hoog: C.dimRed, middel: C.dimOrange, laag: C.dimGreen };
 
@@ -812,7 +1255,7 @@ export default function QuickScan() {
               padding: "6px 16px", borderRadius: 100,
               background: C.accentDim, fontSize: 12, fontWeight: 600,
               color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: MONO,
-            }}>Jullie AI-readiness</div>
+            }}>Jouw AI-beeld</div>
           </div>
 
           <h2 style={{
@@ -822,14 +1265,19 @@ export default function QuickScan() {
             letterSpacing: tokens.letterSpacing.h2,
             lineHeight: 1.2,
           }}>
-            <span style={{ color: C.accent }}>{pct}%</span> AI-ready
+            <span style={{ color: C.accent }}>{pct}%</span>
           </h2>
+          <p style={{
+            marginTop: 8, fontSize: 18, color: C.white, margin: "8px 0 0 0",
+          }}>
+            AI-beeldscore
+          </p>
           <div style={{
             marginTop: 14, display: "flex", width: "fit-content", margin: "14px auto 0", padding: "6px 18px", borderRadius: 100,
             background: C.card, border: `1px solid ${C.border}`,
             fontSize: 13, fontWeight: 600, color: C.white, fontFamily: MONO,
           }}>
-            Niveau: {overallLabel}
+            Profiel: {overallLabel}
           </div>
           <p style={{ marginTop: 16, fontSize: 15, color: C.muted, maxWidth: 400, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
             {overallSub}
@@ -867,21 +1315,26 @@ export default function QuickScan() {
           marginBottom: 52, flexWrap: "wrap",
         }}>
           {Object.entries(DIMENSIONS).map(([key, dim]) => (
-            <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <Ring pct={(dimScores[key] || 0) / (dimMax[key] || 1)} color={dim.color} size={100} strokeWidth={4}>
+            <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, minWidth: 110 }}>
+              <Ring pct={(dimPct[key] || 0) / 100} color={dim.color} size={100} strokeWidth={4}>
                 <span style={{ fontSize: 22, fontWeight: 500, color: dim.color, fontFamily: FONT }}>
-                  {dimScores[key] || 0}
+                  {dimPct[key] || 0}%
                 </span>
-                <span style={{ fontSize: 10, color: C.subtle, fontFamily: MONO }}>/{dimMax[key]}</span>
               </Ring>
               <span style={{ fontSize: 12, color: C.muted, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.06em", display: "inline-flex", alignItems: "center", gap: 4 }}>
                 <DimIcon dim={dim} size={12} /> {dim.label}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 600, color: dim.color,
+                background: dim.dimColor, padding: "3px 10px", borderRadius: 100, fontFamily: MONO,
+              }}>
+                {dimLevel[key]}
               </span>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 48 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 32 }}>
           {advice.map((a, i) => {
             const dim = DIMENSIONS[a.dim];
             return (
@@ -919,6 +1372,24 @@ export default function QuickScan() {
         </div>
 
         <div style={{
+          background: C.card,
+          borderRadius: tokens.radius.main,
+          padding: "24px 28px",
+          marginBottom: 32,
+          border: `1px dashed ${C.border}`,
+        }}>
+          <p style={{
+            fontSize: 12, fontWeight: 600, color: C.accent, fontFamily: MONO,
+            letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 10px 0",
+          }}>
+            Later vervolg
+          </p>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: C.muted, margin: 0 }}>
+            In een volgende scan gaan we dieper in op kennisniveau, veilig gebruik, privacy, prompts, automatisering, AI-beleid, processen en kansen per afdeling.
+          </p>
+        </div>
+
+        <div style={{
           background: C.cream,
           borderRadius: tokens.radius.main,
           padding: "48px 40px",
@@ -933,7 +1404,7 @@ export default function QuickScan() {
             lineHeight: 1.2,
             color: C.creamText,
           }}>
-            Klaar om AI écht aan<br/>het werk te zetten?
+            Klaar om AI écht aan<br />het werk te zetten?
           </h3>
           <p style={{
             fontSize: 15,
@@ -945,7 +1416,7 @@ export default function QuickScan() {
             Wij helpen organisaties om AI in te zetten op een manier die past bij wie ze zijn. Plan een gesprek en ontdek wat dat voor jullie team kan betekenen.
           </p>
           <a
-            href={`mailto:hai@baind.nl?subject=${encodeURIComponent("Resultaten Quickscan")}&body=${encodeURIComponent(`Hoi Baind,\n\nIk heb de Quickscan ingevuld en scoorde ${pct}% (niveau: ${overallLabel}).\n\nIk zou graag een gesprek plannen om de resultaten te bespreken.\n\nMet vriendelijke groet,\n${contact.naam || ""}\n${contact.bedrijf || ""}`)}`}
+            href={`mailto:hai@baind.nl?subject=${encodeURIComponent("Resultaten Quickscan")}&body=${encodeURIComponent(`Hoi Baind,\n\nIk heb de Quickscan ingevuld.\nAI-beeldscore: ${pct}% (profiel: ${overallLabel}).\nKennismaking: ${dimPct.kennismaking}% · Houding: ${dimPct.houding}% · Organisatie: ${dimPct.organisatie}%\n\nIk zou graag een gesprek plannen om de resultaten te bespreken.\n\nMet vriendelijke groet,\n${contact.naam || ""}\n${contact.bedrijf || ""}`)}`}
             style={{
               ...buttonPrimaryStyle(),
               padding: "13px 24px 13px 28px",
