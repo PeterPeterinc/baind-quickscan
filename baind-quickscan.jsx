@@ -743,6 +743,7 @@ export default function QuickScan() {
   } = computeResults(answers);
 
   const goToResult = () => {
+    window.open("https://www.baind.nl/quickscan/bedankt", "_blank", "noopener,noreferrer");
     setPhase("result");
     setTimeout(() => setRevealed(true), 80);
   };
