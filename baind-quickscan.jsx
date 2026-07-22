@@ -743,9 +743,19 @@ export default function QuickScan() {
   } = computeResults(answers);
 
   const goToResult = () => {
-    window.open("https://www.baind.nl/quickscan/bedankt", "_blank", "noopener,noreferrer");
     setPhase("result");
     setTimeout(() => setRevealed(true), 80);
+    // Bedankt-pagina als extra tab; focus blijft op de resultaten
+    const thankYou = window.open("https://www.baind.nl/quickscan/bedankt", "_blank");
+    if (thankYou) {
+      try {
+        thankYou.opener = null;
+        thankYou.blur();
+      } catch {
+        /* ignore */
+      }
+    }
+    window.focus();
   };
 
   const submitWithContact = async () => {
