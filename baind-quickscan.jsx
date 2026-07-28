@@ -755,7 +755,6 @@ export default function QuickScan() {
     return /\b(Chrome|CriOS|Edg)\//.test(ua) && !/\bOPR\//.test(ua);
   };
 
-  /** Focus synchroon terugzetten — delayed focus negeert Chrome vaak. */
   const focusResultsNow = () => {
     try {
       window.focus();
@@ -764,62 +763,73 @@ export default function QuickScan() {
     }
   };
 
+  /** Onzichtbare load van bedankt (geen focus-diefstal). */
+  const loadBedanktHidden = () => {
+    const existing = document.getElementById("baind-bedankt-frame");
+    if (existing) existing.remove();
+    const iframe = document.createElement("iframe");
+    iframe.id = "baind-bedankt-frame";
+    iframe.src = BEDANKT_URL;
+    iframe.title = "Bedankt";
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.setAttribute("tabindex", "-1");
+    Object.assign(iframe.style, {
+      position: "fixed",
+      width: "0",
+      height: "0",
+      border: "0",
+      opacity: "0",
+      pointerEvents: "none",
+      left: "-9999px",
+      top: "0",
+    });
+    document.body.appendChild(iframe);
+  };
+
   /**
-   * Open bedankt als pop-under (Chrome).
-   * Chrome laat geen echte background-tabs toe; dit is het best haalbare:
-   * venster openen, meteen blur’en, focus terug naar de scores.
+   * Chrome opent nieuwe tabs altijd op de voorgrond (niet te voorkomen).
+   * Daarom: off-screen popup (1×1) die bedankt laadt zonder de scores te bedekken.
+   * Lukt dat niet → stille iframe, nooit een zichtbaar tabblad focussen.
    */
   const openBedanktTab = () => {
-    let win = null;
-
     if (isChromium()) {
-      // Chromium pop-under: eerst leeg venster, focus terug, dán URL zetten
+      let win = null;
       try {
-        win = window.open("about:blank", "baind_bedankt");
+        // Off-screen popup i.p.v. tab — zo blijf je op de scorepagina kijken
+        win = window.open(
+          BEDANKT_URL,
+          "baind_bedankt",
+          "width=1,height=1,left=10000,top=10000,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=no",
+        );
       } catch {
         win = null;
       }
       focusResultsNow();
-      if (!win) {
+      if (win) {
         try {
-          win = window.open(BEDANKT_URL, "baind_bedankt");
+          win.blur();
         } catch {
-          return;
+          /* ignore */
         }
         focusResultsNow();
+        // Popup meteen minimaliseren/dicht bij de rand houden
         try {
-          win?.blur();
+          win.resizeTo(1, 1);
+          win.moveTo(10000, 10000);
         } catch {
           /* ignore */
         }
         focusResultsNow();
         return;
       }
-      try {
-        win.blur();
-      } catch {
-        /* ignore */
-      }
-      focusResultsNow();
-      try {
-        win.location.replace(BEDANKT_URL);
-      } catch {
-        try {
-          win.location.href = BEDANKT_URL;
-        } catch {
-          /* ignore */
-        }
-      }
-      try {
-        win.blur();
-      } catch {
-        /* ignore */
-      }
+      // Popup geblokkeerd: wél laden, géén zichtbaar tabblad forceren
+      loadBedanktHidden();
       focusResultsNow();
       return;
     }
 
-    // Overige browsers: nieuw tabblad via about:blank
+    // Overige browsers: probeer tab + focus terug
+    let win = null;
     try {
       win = window.open("about:blank", "_blank");
     } catch {
@@ -827,12 +837,7 @@ export default function QuickScan() {
     }
     focusResultsNow();
     if (!win) {
-      try {
-        window.open(BEDANKT_URL, "_blank");
-      } catch {
-        /* ignore */
-      }
-      focusResultsNow();
+      loadBedanktHidden();
       return;
     }
     try {
