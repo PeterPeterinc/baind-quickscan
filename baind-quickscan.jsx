@@ -750,23 +750,15 @@ export default function QuickScan() {
     setRevealed(true);
   };
 
-  const isChromium = () => {
-    const ua = navigator.userAgent;
-    return /\b(Chrome|CriOS|Edg)\//.test(ua) && !/\bOPR\//.test(ua);
-  };
-
-  const focusResultsNow = () => {
-    try {
-      window.focus();
-    } catch {
-      /* ignore */
-    }
-  };
-
-  /** Onzichtbare load van bedankt (geen focus-diefstal). */
-  const loadBedanktHidden = () => {
+  /**
+   * Bedankt laden zonder focus te stelen.
+   * Chrome opent window.open() altijd als zichtbaar tabblad op de voorgrond
+   * (ook met off-screen features) — daarom géén window.open.
+   */
+  const openBedanktTab = () => {
     const existing = document.getElementById("baind-bedankt-frame");
     if (existing) existing.remove();
+
     const iframe = document.createElement("iframe");
     iframe.id = "baind-bedankt-frame";
     iframe.src = BEDANKT_URL;
@@ -784,70 +776,13 @@ export default function QuickScan() {
       top: "0",
     });
     document.body.appendChild(iframe);
-  };
 
-  /**
-   * Chrome opent nieuwe tabs altijd op de voorgrond (niet te voorkomen).
-   * Daarom: off-screen popup (1×1) die bedankt laadt zonder de scores te bedekken.
-   * Lukt dat niet → stille iframe, nooit een zichtbaar tabblad focussen.
-   */
-  const openBedanktTab = () => {
-    if (isChromium()) {
-      let win = null;
-      try {
-        // Off-screen popup i.p.v. tab — zo blijf je op de scorepagina kijken
-        win = window.open(
-          BEDANKT_URL,
-          "baind_bedankt",
-          "width=1,height=1,left=10000,top=10000,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=no",
-        );
-      } catch {
-        win = null;
-      }
-      focusResultsNow();
-      if (win) {
-        try {
-          win.blur();
-        } catch {
-          /* ignore */
-        }
-        focusResultsNow();
-        // Popup meteen minimaliseren/dicht bij de rand houden
-        try {
-          win.resizeTo(1, 1);
-          win.moveTo(10000, 10000);
-        } catch {
-          /* ignore */
-        }
-        focusResultsNow();
-        return;
-      }
-      // Popup geblokkeerd: wél laden, géén zichtbaar tabblad forceren
-      loadBedanktHidden();
-      focusResultsNow();
-      return;
-    }
-
-    // Overige browsers: probeer tab + focus terug
-    let win = null;
+    // Extra hit voor tracking / pageview
     try {
-      win = window.open("about:blank", "_blank");
-    } catch {
-      win = null;
-    }
-    focusResultsNow();
-    if (!win) {
-      loadBedanktHidden();
-      return;
-    }
-    try {
-      win.blur();
-      win.location.replace(BEDANKT_URL);
-      win.blur();
+      navigator.sendBeacon?.(BEDANKT_URL);
     } catch {
       /* ignore */
     }
-    focusResultsNow();
   };
 
   const submitWithContact = async () => {
@@ -868,18 +803,14 @@ export default function QuickScan() {
     setReportPdfUrl(null);
     setReportPdfFileName(null);
 
-    // 1) Scores meteen in DIT tabblad tonen (vóór window.open)
+    // Scores tonen in dit tabblad — geen window.open (Chrome steelt anders de focus)
     flushSync(() => {
       setSubmitting(true);
       goToResult();
     });
-    focusResultsNow();
 
-    // 2) Bedankt openen + focus synchroon terug (belangrijk voor Chrome)
     openBedanktTab();
-    focusResultsNow();
 
-    // 3) Opslaan op de achtergrond
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
@@ -910,7 +841,6 @@ export default function QuickScan() {
     }
 
     setSubmitting(false);
-    focusResultsNow();
   };
 
   const wrap = {
