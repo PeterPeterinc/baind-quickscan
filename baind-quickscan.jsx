@@ -750,34 +750,50 @@ export default function QuickScan() {
     setRevealed(true);
   };
 
-  /** Laadt de bedankt-pagina zonder dit tabblad te verlaten of te focussen. */
-  const loadBedanktInBackground = () => {
-    const existing = document.getElementById("baind-bedankt-frame");
-    if (existing) existing.remove();
-
-    const iframe = document.createElement("iframe");
-    iframe.id = "baind-bedankt-frame";
-    iframe.src = BEDANKT_URL;
-    iframe.title = "Bedankt";
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.setAttribute("tabindex", "-1");
-    Object.assign(iframe.style, {
-      position: "fixed",
-      width: "0",
-      height: "0",
-      border: "0",
-      opacity: "0",
-      pointerEvents: "none",
-      left: "-9999px",
-      top: "0",
-    });
-    document.body.appendChild(iframe);
-
-    // Extra pageview-hit voor tracking (ook als iframe geblokkeerd wordt)
+  const focusResultsTab = () => {
     try {
-      const img = new Image();
-      img.referrerPolicy = "no-referrer-when-downgrade";
-      img.src = `${BEDANKT_URL}${BEDANKT_URL.includes("?") ? "&" : "?"}qs=1&t=${Date.now()}`;
+      window.focus();
+    } catch {
+      /* ignore */
+    }
+    requestAnimationFrame(() => {
+      try {
+        window.focus();
+      } catch {
+        /* ignore */
+      }
+    });
+    [0, 50, 150, 400].forEach((ms) => {
+      setTimeout(() => {
+        try {
+          window.focus();
+        } catch {
+          /* ignore */
+        }
+      }, ms);
+    });
+  };
+
+  const openBedanktTab = () => {
+    // Eerst leeg tabblad (user gesture) — voorkomt navigatie van dit venster.
+    let tab = null;
+    try {
+      tab = window.open("about:blank", "_blank");
+    } catch {
+      tab = null;
+    }
+    if (!tab) {
+      try {
+        window.open(BEDANKT_URL, "_blank");
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    try {
+      tab.opener = null;
+      tab.location.replace(BEDANKT_URL);
+      tab.blur();
     } catch {
       /* ignore */
     }
@@ -801,15 +817,18 @@ export default function QuickScan() {
     setReportPdfUrl(null);
     setReportPdfFileName(null);
 
-    // Scorepagina tonen — dit venster blijft altijd op de resultaten
+    // 1) Scores meteen in DIT tabblad tonen
     flushSync(() => {
       setSubmitting(true);
       goToResult();
     });
+    focusResultsTab();
 
-    // Bedankt laden zonder zichtbaar tabblad (browsers focussen anders altijd daarheen)
-    loadBedanktInBackground();
+    // 2) Bedankt in een écht nieuw tabblad openen
+    openBedanktTab();
+    focusResultsTab();
 
+    // 3) Opslaan op de achtergrond
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
@@ -840,6 +859,7 @@ export default function QuickScan() {
     }
 
     setSubmitting(false);
+    focusResultsTab();
   };
 
   const wrap = {
