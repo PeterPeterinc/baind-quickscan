@@ -750,53 +750,99 @@ export default function QuickScan() {
     setRevealed(true);
   };
 
-  const focusResultsTab = () => {
+  const isChromium = () => {
+    const ua = navigator.userAgent;
+    return /\b(Chrome|CriOS|Edg)\//.test(ua) && !/\bOPR\//.test(ua);
+  };
+
+  /** Focus synchroon terugzetten — delayed focus negeert Chrome vaak. */
+  const focusResultsNow = () => {
     try {
       window.focus();
     } catch {
       /* ignore */
     }
-    requestAnimationFrame(() => {
+  };
+
+  /**
+   * Open bedankt als pop-under (Chrome).
+   * Chrome laat geen echte background-tabs toe; dit is het best haalbare:
+   * venster openen, meteen blur’en, focus terug naar de scores.
+   */
+  const openBedanktTab = () => {
+    let win = null;
+
+    if (isChromium()) {
+      // Chromium pop-under: eerst leeg venster, focus terug, dán URL zetten
       try {
-        window.focus();
+        win = window.open("about:blank", "baind_bedankt");
       } catch {
-        /* ignore */
+        win = null;
       }
-    });
-    [0, 50, 150, 400].forEach((ms) => {
-      setTimeout(() => {
+      focusResultsNow();
+      if (!win) {
         try {
-          window.focus();
+          win = window.open(BEDANKT_URL, "baind_bedankt");
+        } catch {
+          return;
+        }
+        focusResultsNow();
+        try {
+          win?.blur();
         } catch {
           /* ignore */
         }
-      }, ms);
-    });
-  };
-
-  const openBedanktTab = () => {
-    // Eerst leeg tabblad (user gesture) — voorkomt navigatie van dit venster.
-    let tab = null;
-    try {
-      tab = window.open("about:blank", "_blank");
-    } catch {
-      tab = null;
+        focusResultsNow();
+        return;
+      }
+      try {
+        win.blur();
+      } catch {
+        /* ignore */
+      }
+      focusResultsNow();
+      try {
+        win.location.replace(BEDANKT_URL);
+      } catch {
+        try {
+          win.location.href = BEDANKT_URL;
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        win.blur();
+      } catch {
+        /* ignore */
+      }
+      focusResultsNow();
+      return;
     }
-    if (!tab) {
+
+    // Overige browsers: nieuw tabblad via about:blank
+    try {
+      win = window.open("about:blank", "_blank");
+    } catch {
+      win = null;
+    }
+    focusResultsNow();
+    if (!win) {
       try {
         window.open(BEDANKT_URL, "_blank");
       } catch {
         /* ignore */
       }
+      focusResultsNow();
       return;
     }
     try {
-      tab.opener = null;
-      tab.location.replace(BEDANKT_URL);
-      tab.blur();
+      win.blur();
+      win.location.replace(BEDANKT_URL);
+      win.blur();
     } catch {
       /* ignore */
     }
+    focusResultsNow();
   };
 
   const submitWithContact = async () => {
@@ -817,16 +863,16 @@ export default function QuickScan() {
     setReportPdfUrl(null);
     setReportPdfFileName(null);
 
-    // 1) Scores meteen in DIT tabblad tonen
+    // 1) Scores meteen in DIT tabblad tonen (vóór window.open)
     flushSync(() => {
       setSubmitting(true);
       goToResult();
     });
-    focusResultsTab();
+    focusResultsNow();
 
-    // 2) Bedankt in een écht nieuw tabblad openen
+    // 2) Bedankt openen + focus synchroon terug (belangrijk voor Chrome)
     openBedanktTab();
-    focusResultsTab();
+    focusResultsNow();
 
     // 3) Opslaan op de achtergrond
     try {
@@ -859,7 +905,7 @@ export default function QuickScan() {
     }
 
     setSubmitting(false);
-    focusResultsTab();
+    focusResultsNow();
   };
 
   const wrap = {
