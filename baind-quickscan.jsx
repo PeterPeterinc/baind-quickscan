@@ -745,7 +745,11 @@ export default function QuickScan() {
   const goToResult = () => {
     setPhase("result");
     setTimeout(() => setRevealed(true), 80);
-    // Bedankt-pagina als extra tab; focus blijft op de resultaten
+  };
+
+  const openBedanktInBackground = () => {
+    // Synchroon bij user-click openen (vóór await), anders navigeert
+    // de browser vaak het huidige tabblad i.p.v. een nieuw tabblad.
     const thankYou = window.open("https://www.baind.nl/quickscan/bedankt", "_blank");
     if (thankYou) {
       try {
@@ -756,6 +760,8 @@ export default function QuickScan() {
       }
     }
     window.focus();
+    requestAnimationFrame(() => window.focus());
+    setTimeout(() => window.focus(), 0);
   };
 
   const submitWithContact = async () => {
@@ -773,6 +779,10 @@ export default function QuickScan() {
     }
     const wantPdfDownload = Boolean(naam && bedrijf && email && telefoon);
     setSubmitError("");
+
+    // Eerst nieuw tabblad openen (nog in dezelfde click-handler)
+    openBedanktInBackground();
+
     setSubmitting(true);
     setReportPdfUrl(null);
     setReportPdfFileName(null);
@@ -807,6 +817,7 @@ export default function QuickScan() {
     }
     setSubmitting(false);
     goToResult();
+    window.focus();
   };
 
   const wrap = {
